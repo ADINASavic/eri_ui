@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ERI 아웃게임 목업 v0.4</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=IBM+Plex+Sans+KR:wght@500;700&family=Baloo+2:wght@800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#efe9d9; --panel:#faf6ec; --panel2:#e7e0cd; --line:#d8d0bc;
+    --txt:#2b2b2b; --txt-dim:#8a8474;
+    --cream:#faf6ec; --cream-line:#d8d0bc; --ink:#2b2b2b; --charcoal:#323232;
+    --lav:#dbdeea; --lav-line:#9aa0b5;
+    --neon:#ff2d4d; --neon-glow:rgba(255,45,77,.55); --yellow:#ffd23e;
+    --d-easy:#5a8c46; --d-normal:#a08228; --d-hard:#963c32; --d-master:#555;
+    --k-orange:#e87a2e; --k-teal:#5ecfcf; --k-red:#e0304a; --k-purple:#c08ae0; --k-gray:#a5a5a5; --k-tan:#e6c9a3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+  body{background:#08070a;color:var(--txt);display:flex;align-items:center;justify-content:center;min-height:100vh;
+       font-family:'Montserrat','IBM Plex Sans KR','Malgun Gothic',sans-serif}
+  #stage{width:1280px;height:720px;position:relative;overflow:hidden;background:var(--bg);
+         border-radius:10px;box-shadow:0 0 80px rgba(0,0,0,.8)}
+  .papertex{position:absolute;inset:0;pointer-events:none;opacity:.55;
+    background-image:radial-gradient(ellipse 300px 200px at 20% 30%,rgba(255,255,255,.35),transparent 60%),
+      radial-gradient(ellipse 250px 300px at 75% 60%,rgba(255,255,255,.22),transparent 60%),
+      radial-gradient(ellipse 350px 250px at 85% 15%,rgba(255,255,255,.15),transparent 60%)}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column}
+  .screen.active{display:flex;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .mono{font-variant-numeric:tabular-nums}
+
+  .key{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;
+       border-radius:7px;color:#fff;font-weight:800;font-size:14px;padding:0 6px;
+       box-shadow:0 2px 0 rgba(0,0,0,.35);vertical-align:middle}
+  .key.o{background:var(--k-orange)}.key.t{background:var(--k-teal)}.key.r{background:var(--k-red)}
+  .key.p{background:var(--k-purple)}.key.g{background:var(--k-gray)}.key.n{background:var(--k-tan);color:#5a4a30}
+  .legend{display:flex;gap:16px;align-items:center;font-size:12.5px;font-weight:700;color:var(--txt-dim);flex-wrap:wrap}
+  .legend span.lbl{margin-left:4px}
+
+  .badge{display:inline-block;font-size:10.5px;font-weight:900;letter-spacing:1.5px;
+         padding:3px 10px;border-radius:12px;color:#fff;vertical-align:middle}
+  .badge.official{background:var(--k-red)}
+  .badge.ranked{background:var(--d-normal)}
+  .badge.unranked{background:#5a5a60}
+
+  .btn{background:var(--panel2);border:2px solid var(--line);color:var(--txt);
+       padding:10px 26px;font-size:15px;font-weight:800;cursor:pointer;border-radius:14px;
+       font-family:inherit;transition:.12s;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+  .btn:hover{border-color:var(--neon);color:var(--neon)}
+  .btn:active{transform:translateY(1px);box-shadow:none}
+  .btn.lav{background:var(--lav);border-color:var(--lav-line);color:var(--ink)}
+  .btn.start{background:var(--cream);border-color:#fff;color:var(--ink);font-weight:900;font-size:17px}
+  .btn.start b{color:var(--k-red)}
+  .pcard{background:var(--panel);border:2px solid var(--line);border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+
+  /* ═══ FMOD 스플래시 ═══ */
+  #splash{position:absolute;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center;
+          transition:opacity .6s ease}
+  #splash.fade{opacity:0;pointer-events:none}
+  #splash .fmod{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:150px;color:#fff;
+                letter-spacing:-4px;line-height:1;position:relative}
+  #splash .fmod sup{font-size:26px;position:absolute;bottom:14px;right:-34px;letter-spacing:0}
+  #splash .note{position:absolute;bottom:40px;left:0;right:0;text-align:center;font-size:10px;color:#3a3a3a;letter-spacing:2px}
+
+  /* ═══ TITLE ═══ */
+  #scr-title{background:#050505;overflow:hidden}
+  .t-char{position:absolute;top:50%;right:16%;transform:translateY(-50%) scale(.62);
+          transition:right .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1);
+          filter:drop-shadow(0 0 14px rgba(255,45,77,.5))}
+  img.t-char{height:640px;width:auto;object-fit:contain}
+  .t-logo{position:absolute;top:50%;left:12%;transform:translateY(-58%);
+          transition:opacity .5s ease,transform .5s ease}
+  .t-logo .logo{font-size:128px;font-weight:900;line-height:1;letter-spacing:2px;color:var(--neon);
+        text-shadow:0 0 18px var(--neon-glow),0 0 60px var(--neon-glow);display:inline-flex;align-items:baseline}
+  .t-logo .bars{transform:translateY(-4px);margin-left:6px;display:inline-block}
+  .t-logo .dots{margin-left:10px}
+  .t-logo .sub{margin-top:10px;color:var(--neon);font-weight:800;letter-spacing:9px;font-size:15px;
+            text-shadow:0 0 12px var(--neon-glow)}
+  .t-logo .note{margin-top:6px;font-size:10px;color:#5a3a40;letter-spacing:2px}
+  .presskey{position:absolute;bottom:70px;left:0;right:0;text-align:center;color:#c9a8ae;
+            font-weight:800;letter-spacing:6px;font-size:15px;animation:blink 1.6s infinite}
+  @keyframes blink{0%,100%{opacity:.9}50%{opacity:.15}}
+  .t-menu{position:absolute;top:50%;left:10%;transform:translateY(-50%) translateX(-60px);
+          display:flex;flex-direction:column;gap:16px;width:320px;opacity:0;pointer-events:none;
+          transition:opacity .5s ease .25s,transform .5s cubic-bezier(.2,.8,.2,1) .25s}
+  .t-menu .small-logo{font-size:44px;font-weight:900;color:var(--neon);
+        text-shadow:0 0 14px var(--neon-glow);margin-bottom:10px;letter-spacing:1px}
+  .tbtn{background:rgba(13,13,15,.9);border:2px solid #3a1520;color:#f2e9e9;padding:15px 22px;text-align:left;
+        font-size:18px;font-weight:800;letter-spacing:3px;border-radius:12px;cursor:pointer;transition:.15s;
+        font-family:inherit;display:flex;align-items:center}
+  .tbtn:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 18px var(--neon-glow);
+              text-shadow:0 0 8px var(--neon-glow);transform:translateX(6px)}
+  .tbtn .k{font-size:11px;color:#7d5560;margin-left:auto;letter-spacing:0}
+  #scr-title.menu-mode .t-logo{opacity:0;transform:translateY(-58%) translateX(-40px);pointer-events:none}
+  #scr-title.menu-mode .presskey{display:none}
+  #scr-title.menu-mode .t-char{right:8%;transform:translateY(-50%) scale(.78)}
+  #scr-title.menu-mode .t-menu{opacity:1;pointer-events:auto;transform:translateY(-50%) translateX(0)}
+  #scr-title.menu-mode .profile{opacity:1}
+  .profile{position:absolute;top:22px;right:22px;display:flex;align-items:center;gap:12px;opacity:0;transition:opacity .5s ease .3s;
+    background:#0d0d0f;border:2px solid #2a2a30;border-radius:14px;padding:10px 16px;color:#eee;z-index:3}
+  .profile .avatar{width:38px;height:38px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd23e 30%,var(--neon) 75%)}
+  .profile .name{font-weight:800;font-size:14px}
+  .profile .rating{font-size:12px;color:var(--yellow);font-weight:700}
+  .profile .online{font-size:10px;color:#5cff8f;font-weight:700}
+
+  /* ═══ 상단바 ═══ */
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 24px;z-index:2;
+          background:var(--charcoal);color:#fff;border-bottom:2px solid #262626}
+  .topbar h2{font-size:17px;letter-spacing:3px;font-weight:900;margin-right:auto}
+  .topbar h2 em{color:var(--neon);font-style:normal;text-shadow:0 0 10px var(--neon-glow)}
+  .search{background:#fff;border:2px solid var(--line);border-radius:10px;color:var(--ink);
+          padding:7px 12px;font-size:13px;width:230px;outline:none;font-family:inherit;font-weight:600}
+  .search:focus{border-color:var(--neon)}
+  .search::placeholder{color:#a8a294}
+  .sortsel{display:flex;align-items:center;gap:6px;font-size:12px;color:#cfcfcf;font-weight:700}
+  .sortsel select{background:#fff;color:var(--ink);border:2px solid var(--line);
+                  padding:6px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:700}
+
+  /* ═══ SONG SELECT — 정사각 카드 캐러셀 (기존 SongCard 방식) ═══ */
+  .car-wrap{position:relative;height:330px;overflow:hidden;flex-shrink:0}
+  .car-track{position:absolute;top:50%;left:50%;display:flex;gap:24px;align-items:center;
+             transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  .scard{width:240px;height:240px;border-radius:18px;position:relative;flex-shrink:0;cursor:pointer;
+         overflow:hidden;border:3px solid var(--line);transition:.3s;transform:translateY(-50%) scale(.82);
+         filter:brightness(.72) saturate(.85)}
+  .scard.focused{transform:translateY(-50%) scale(1.08);filter:none;border-color:#fff;
+                 box-shadow:0 0 0 3px rgba(255,45,77,.5),0 8px 24px rgba(80,70,50,.4)}
+  .scard .sc-jacket{position:absolute;inset:0}
+  /* 난이도 컬러 블록 (SongCard.songDifficultyImage) */
+  .sc-diff{position:absolute;top:10px;left:10px;width:44px;height:44px;border-radius:10px;color:#fff;
+           display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;
+           box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.35)}
+  .sc-tier{position:absolute;top:14px;right:10px}
+  /* 하단 오버레이 (SongCard.infoOverlay) */
+  .sc-overlay{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 10px;
+              background:linear-gradient(transparent,rgba(10,8,10,.92) 55%)}
+  .sc-t{font-weight:900;font-size:16px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sc-a{font-size:11.5px;color:#b5aea6;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sc-pb{display:flex;align-items:baseline;gap:6px;margin-top:4px}
+  .sc-pb .grade{font-weight:900;font-size:16px;color:var(--yellow)}
+  .sc-pb .score{font-size:12px;color:#d8d2c8;font-weight:700}
+  .sc-pb .noplay{font-size:11px;color:#7a746c;font-weight:700}
+
+  /* 캐러셀 아래 정보 스트립 */
+  .info-strip{flex:1;display:flex;gap:14px;padding:0 22px 4px;min-height:0}
+  .is-left{flex:1.2;padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+  .is-right{flex:1;padding:16px 20px}
+  .diffs{display:flex;gap:8px}
+  .diff{padding:8px 16px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:900;color:#fff;
+        opacity:.4;transition:.12s;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+  .diff.sel{opacity:1;transform:translateY(-2px);outline:3px solid rgba(255,255,255,.85);outline-offset:-5px}
+  .kv{font-size:13px;color:var(--txt-dim);line-height:1.8;font-weight:600}
+  .kv b{color:var(--txt)}
+  .fx{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  /* 필터 팝오버 (topbar) */
+  .filter-pop{position:absolute;top:62px;right:24px;background:var(--panel);border:2px solid var(--line);
+              border-radius:14px;padding:12px 16px;display:none;z-index:6;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .filter-pop.open{display:block}
+  .filter-pop .fx{margin-top:0}
+  /* 플레이어 프로필 패널 */
+  .player-panel{display:flex;align-items:center;gap:16px}
+  .pp-avatar{width:72px;height:72px;border-radius:50%;flex-shrink:0;border:3px solid #fff;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd23e 30%,var(--neon) 75%);
+    box-shadow:0 0 14px rgba(255,45,77,.35)}
+  .pp-info{flex:1;min-width:0}
+  .pp-name{font-weight:900;font-size:18px}
+  .pp-online{font-size:10px;color:#5cff8f;font-weight:700;margin-left:6px}
+  .pp-stats{display:flex;gap:18px;margin-top:6px}
+  .pp-stat{display:flex;flex-direction:column}
+  .pp-label{font-size:9.5px;letter-spacing:1.5px;color:var(--txt-dim);font-weight:800}
+  .pp-stat b{font-size:16px}
+  .pp-expbar{margin-top:8px;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .pp-exp{height:100%;background:linear-gradient(90deg,var(--neon),var(--yellow));border-radius:4px}
+  .pp-expname{font-size:10px;color:var(--txt-dim);font-weight:700;margin-top:3px}
+  .pp-set{align-self:center;flex-shrink:0;padding:10px 16px;font-size:13px}
+  .chip{padding:4px 13px;border:2px solid var(--line);background:var(--panel2);border-radius:14px;
+        cursor:pointer;color:var(--txt-dim);font-weight:800;font-size:12px}
+  .chip.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff}
+  .foot{display:flex;align-items:center;gap:12px;padding:12px 24px;background:var(--charcoal);border-top:2px solid #262626}
+  .foot .legend{color:#cfcfcf}
+  .foot .steplabel{color:#bdb8ae}
+
+  /* ═══ DECIDE ═══ */
+  .dc-body{flex:1;display:flex;min-height:0;padding:14px 22px 0;gap:16px}
+  .dc-left{width:40%;padding:24px;display:flex;flex-direction:column;gap:14px}
+  .dc-left .bigjacket{width:170px;height:170px;border-radius:16px;border:4px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  .dc-right{flex:1;display:flex;flex-direction:column}
+  .lb-tabs{display:flex;gap:6px;margin-bottom:-2px;z-index:1;padding-left:10px}
+  .lb-tab{padding:9px 22px;font-size:13px;font-weight:800;cursor:pointer;border:2px solid var(--line);
+          border-bottom:none;border-radius:12px 12px 0 0;color:var(--txt-dim);background:var(--panel)}
+  .lb-tab.on{color:#fff;background:var(--charcoal);border-color:var(--charcoal)}
+  .lb-tab.disabled{opacity:.35;cursor:not-allowed}
+  .lb{flex:1;overflow-y:auto;background:var(--panel);border:2px solid var(--line);border-radius:16px}
+  .lb table{width:100%;border-collapse:collapse;font-size:13px;font-weight:600}
+  .lb th{text-align:left;padding:10px 14px;color:#cfcfcf;font-size:11px;letter-spacing:1.5px;
+         position:sticky;top:0;background:var(--charcoal)}
+  .lb td{padding:10px 14px;border-bottom:2px solid rgba(216,208,188,.7)}
+  .lb tr.me td{background:rgba(224,48,74,.08);color:#c22742;font-weight:800}
+  .lb .rk1{color:var(--d-normal);font-weight:900}
+  .lb-note{padding:24px;text-align:center;color:var(--txt-dim);font-size:13px;font-weight:700}
+  .stepper{display:flex;align-items:center;gap:2px;background:var(--panel2);border:2px solid var(--line);border-radius:12px}
+  .stepper button{background:var(--lav);border:none;color:var(--ink);font-size:18px;font-weight:900;
+                  width:38px;height:36px;cursor:pointer;font-family:inherit}
+  .stepper button:first-child{border-radius:9px 0 0 9px}
+  .stepper button:last-child{border-radius:0 9px 9px 0}
+  .stepper button:hover{filter:brightness(1.06)}
+  .stepper .val{min-width:72px;text-align:center;font-weight:900;font-size:17px}
+  .steplabel{font-size:12px;color:var(--txt-dim);font-weight:700}
+  .spacer{flex:1}
+
+  /* ═══ SETTINGS — 카테고리 카드 캐러셀 (기존 SettingsCarousel 방식) ═══ */
+  .set-car{flex:1;position:relative;overflow:hidden}
+  .set-track{display:flex;height:100%;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  .set-page{min-width:100%;display:flex;align-items:center;justify-content:center;padding:24px 100px}
+  .set-page .set-card{width:620px}
+  .set-dots{display:flex;gap:10px;justify-content:center;align-items:center;padding:10px 0 16px}
+  .set-dot{width:11px;height:11px;border-radius:50%;background:var(--line);cursor:pointer;transition:.15s}
+  .set-dot.on{background:var(--charcoal);transform:scale(1.25)}
+  .set-dot-label{font-size:12px;font-weight:800;color:var(--txt-dim);min-width:70px;text-align:center}
+  /* 캐러셀 화살표 (SpriteArrowButton) */
+  .car-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:52px;height:52px;
+    border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink);font-size:17px;
+    cursor:pointer;font-family:inherit;font-weight:900;box-shadow:0 2px 8px rgba(80,70,50,.25);transition:.12s}
+  .car-arrow.left{left:16px}.car-arrow.right{right:16px}
+  .car-arrow:hover{border-color:var(--neon);color:var(--neon)}
+  /* 선곡 중앙 상단 폴더 바 — 작게 */
+  .folder-bar{display:flex;align-items:center;justify-content:center;gap:6px;
+              padding:8px 120px 0;z-index:2}
+  .fb-arrow{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;
+            cursor:pointer;font-size:10px;color:var(--ink);font-weight:900;font-family:inherit;flex-shrink:0}
+  .fb-arrow:hover{border-color:var(--neon);color:var(--neon)}
+  .fb-chips{display:flex;gap:6px;align-items:center}
+  .fb-chip{padding:2px 10px;border-radius:11px;font-size:11px;font-weight:800;cursor:pointer;
+    background:rgba(255,255,255,.6);border:2px solid var(--line);color:var(--txt-dim);
+    white-space:nowrap;text-align:center}
+  .fb-chip.side{min-width:86px;opacity:.75}
+  .fb-chip.side:hover{border-color:var(--neon);color:var(--neon)}
+  .fb-chip.ghost{opacity:.2;cursor:default;pointer-events:none}
+  .fb-chip small{font-size:9px;opacity:.7;font-weight:700}
+  .fb-chip.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff;
+    min-width:110px;padding:3px 14px;font-size:12px}
+  .set-card{padding:20px}
+  .set-card h4{font-size:13px;letter-spacing:2.5px;color:#fff;background:var(--charcoal);display:inline-block;
+               padding:5px 14px;border-radius:10px;margin-bottom:16px;font-weight:900}
+  .set-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:14px;font-weight:700}
+  .set-row .hint{display:block;font-size:11px;color:var(--txt-dim);margin-top:2px;font-weight:600}
+  input[type=range]{accent-color:var(--k-red);width:150px}
+  .sld{display:flex;align-items:center;gap:10px}
+  .sld span{min-width:48px;text-align:right;font-weight:800;font-size:13px}
+  .set-save{display:flex;align-items:center;gap:10px;margin-top:18px;padding-top:14px;
+            border-top:2px dashed var(--line)}
+  .set-save .btn{padding:7px 20px;font-size:13px}
+  .set-fb{font-size:12px;font-weight:800;color:var(--k-red);opacity:0;transition:opacity .3s}
+  .toggle{width:46px;height:26px;border-radius:13px;background:var(--panel2);border:2px solid var(--line);
+          position:relative;cursor:pointer;transition:.2s}
+  .toggle.on{background:var(--k-red);border-color:var(--k-red)}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on::after{left:22px}
+
+  #modal{position:absolute;inset:0;background:rgba(40,35,30,.55);display:none;align-items:center;justify-content:center;z-index:10}
+  #modal.open{display:flex}
+  #modal .box{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:30px 40px;text-align:center}
+  #modal .box p{margin-bottom:20px;font-weight:800}
+
+  .hotkeys{position:absolute;bottom:6px;left:14px;font-size:10px;color:rgba(200,195,185,.55);z-index:5;font-weight:700}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ═══════════ FMOD 스플래시 ═══════════ -->
+  <div id="splash">
+    <div class="fmod">f<span style="letter-spacing:-8px">m</span>od<sup>®</sup></div>
+    <div class="note">※ 실제 빌드에선 FMOD 공식 로고 에셋 사용 (라이선스 표기 규정 준수)</div>
+  </div>
+
+  <!-- ═══════════ TITLE ═══════════ -->
+  <div class="screen active" id="scr-title" onclick="titleAdvance()">
+    <div class="profile">
+      <div class="avatar"></div>
+      <div><div class="name">DANNY</div><div class="rating mono">RATING 1873.42</div></div>
+      <div class="online">● ONLINE</div>
+    </div>
+
+    <!-- 캐릭터: Docs/Outgame/eri_character.png 가 있으면 그걸 사용, 없으면 SVG 폴백 -->
+    <img class="t-char" id="charImg" src="eri_character.png" alt=""
+         onerror="this.remove();document.getElementById('charSvg').style.display='block'">
+    <svg id="charSvg" class="t-char" style="display:none" width="340" height="640" viewBox="0 0 560 1060" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 폴백용 근사 재현 (실제론 psd 캐릭터 레이어 export 사용) -->
+      <g stroke="#ff4655" stroke-width="7">
+        <path d="M200 165 L235 148 L275 152 L300 170 L295 230 L270 262 L225 258 L205 225 Z"/>
+        <path d="M212 170 L228 235 M238 155 L240 250 M262 158 L255 252 M282 168 L272 245 M205 200 L295 205 M210 228 L288 232"/>
+      </g>
+      <g stroke="#ff4655" stroke-width="6">
+        <path d="M205 240 L120 430 L95 640 L60 900 M120 430 L150 520"/>
+        <path d="M298 245 L420 480 L465 620 L495 690 M420 480 L390 560"/>
+        <path d="M225 262 L180 470 M272 262 L330 480"/>
+      </g>
+      <g stroke="#ffe9e9" stroke-width="6">
+        <path d="M230 268 L215 330 L232 470 M268 268 L300 335 L292 470"/>
+        <path d="M215 330 L0 262 M222 352 L0 292"/>
+      </g>
+      <g stroke="#ffd23e" stroke-width="6">
+        <path d="M235 335 L290 460 M292 338 L232 462 M262 330 L246 465 M262 330 L282 462 M240 395 L288 398"/>
+      </g>
+      <g stroke="#ff4655" stroke-width="6">
+        <path d="M205 470 L165 590 M232 470 L210 588 M262 468 L262 590 M292 470 L315 588 M320 472 L358 585"/>
+        <path d="M165 590 L188 520 L210 588 L235 515 L262 590 L288 515 L315 588 L338 518 L358 585"/>
+        <path d="M205 470 L320 472"/>
+      </g>
+      <g stroke="#ffe9e9" stroke-width="6">
+        <path d="M215 595 L155 760 L120 880 L95 915 M255 598 L215 755 L195 880 L95 915"/>
+        <path d="M155 760 L215 755 M120 880 L195 880 M155 760 L195 880 M215 755 L120 880 M215 595 L255 598"/>
+        <path d="M300 598 L360 750 L400 870 L430 900 M268 600 L310 750 L330 875 L430 900"/>
+        <path d="M360 750 L310 750 M400 870 L330 875 M360 750 L330 875 M310 750 L400 870 M300 598 L268 600"/>
+      </g>
+    </svg>
+
+    <div class="t-logo">
+      <div class="logo">ERI<span class="bars">‖</span><span class="dots">:</span></div>
+      <div class="sub">EMOTIVE RHYTHM INTERACTION</div>
+      <div class="note">※ 실제 구현에선 eri_title.psd 에셋 사용 (텍스트/캐릭터 레이어 분리)</div>
+    </div>
+    <div class="presskey">PRESS ANY KEY</div>
+
+    <div class="t-menu">
+      <div class="small-logo">ERI‖:</div>
+      <button class="tbtn" onclick="event.stopPropagation();go('scr-select')">PLAY<span class="k">[5]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();go('scr-settings')">SETTINGS<span class="k">[9]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();alert('차트 임포트: 폴더 선택 / mc·osu·sm 포맷 변환 (목업)')">IMPORT<span class="k">[I]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();openModal()">QUIT<span class="k">[0]</span></button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SONG SELECT : 정사각 카드 캐러셀 ═══════════ -->
+  <div class="screen" id="scr-select">
+    <div class="papertex"></div>
+    <div class="topbar">
+      <h2><em>ERI‖:</em> SONG SELECT <span id="songCount" style="font-size:12px;color:#bdb8ae;margin-left:10px"></span></h2>
+      <input class="search" id="searchIn" oninput="setQuery(this.value)" placeholder="제목 / 아티스트 / charter 검색">
+      <div class="sortsel">정렬
+        <select id="sortSel" onchange="setSort(this.value);this.blur()">
+          <option value="lvAsc">난이도 ↑</option><option value="lvDesc">난이도 ↓</option>
+          <option value="title">제목</option><option value="artist">아티스트</option>
+          <option value="bpm">BPM</option><option value="len">길이</option>
+          <option value="charter">charter</option><option value="date">업로드 최신순</option>
+          <option value="ver">버전</option>
+        </select>
+      </div>
+      <button class="btn" style="padding:6px 14px;font-size:12px" onclick="document.getElementById('filterPop').classList.toggle('open')">FILTER ▾</button>
+      <div id="filterPop" class="filter-pop">
+        <div class="fx">
+          <span class="chip on" data-f="official" onclick="toggleChip(this)">OFFICIAL</span>
+          <span class="chip on" data-f="ranked" onclick="toggleChip(this)">RANKED</span>
+          <span class="chip on" data-f="unranked" onclick="toggleChip(this)">UNRANKED</span>
+          <span class="chip" data-f="cleared" onclick="toggleChip(this)">클리어한 곡만</span>
+          <span class="chip" data-f="charter" onclick="toggleChip(this)">charter: 보리차</span>
+        </div>
+      </div>
+    </div>
+    <div class="folder-bar" id="folderBar">
+      <button class="fb-arrow" onclick="folderJump(-1)">◀</button>
+      <div class="fb-chips" id="folderChips"></div>
+      <button class="fb-arrow" onclick="folderJump(1)">▶</button>
+    </div>
+    <div class="car-wrap">
+      <button class="car-arrow left" onclick="moveCard(-1)">◀</button>
+      <button class="car-arrow right" onclick="moveCard(1)">▶</button>
+      <div class="car-track" id="carTrack"></div>
+    </div>
+    <div class="info-strip">
+      <div class="is-left pcard">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="badge" id="dBadge"></span>
+          <span id="dTitleSmall" style="font-weight:900;font-size:16px"></span>
+        </div>
+        <div class="diffs" id="dDiffs"></div>
+        <div class="kv" id="dKv"></div>
+      </div>
+      <div class="is-right pcard player-panel">
+        <div class="pp-avatar"></div>
+        <div class="pp-info">
+          <div class="pp-name">DANNY <span class="pp-online">● ONLINE</span></div>
+          <div class="pp-stats">
+            <div class="pp-stat"><span class="pp-label">RATING</span><b class="mono" style="color:var(--d-normal)">1873.42</b></div>
+            <div class="pp-stat"><span class="pp-label">LEVEL</span><b class="mono">Lv.42</b></div>
+          </div>
+          <div class="pp-expbar"><div class="pp-exp" style="width:64%"></div></div>
+          <div class="pp-expname">다음 레벨까지 36%</div>
+        </div>
+        <button class="btn lav pp-set" onclick="go('scr-settings')">⚙ 설정 <span style="font-size:11px;opacity:.6">[9]</span></button>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="legend">
+        <span><span class="key t">4</span><span class="key t">6</span><span class="lbl">카드 이동</span></span>
+        <span><span class="key p">1</span><span class="key p">3</span><span class="lbl">난이도</span></span>
+        <span><span class="key r">5</span><span class="lbl">결정</span></span>
+        <span><span class="key n">9</span><span class="lbl">설정</span></span>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" onclick="go('scr-title')">← 타이틀</button>
+      <button class="btn lav" onclick="tryDecide()">결정 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ DECIDE ═══════════ -->
+  <div class="screen" id="scr-decide">
+    <div class="papertex"></div>
+    <div class="topbar"><h2><em>ERI‖:</em> DECIDE</h2>
+      <span style="font-size:11px;color:#bdb8ae;font-weight:700">플레이 안 해도 리더보드는 여기서 열람 가능</span></div>
+    <div class="dc-body">
+      <div class="dc-left pcard">
+        <div class="bigjacket" id="dcJacket"></div>
+        <div>
+          <h3 id="dcTitle" style="font-size:25px;font-weight:900"></h3>
+          <div style="color:var(--txt-dim);font-weight:700" id="dcArtist"></div>
+        </div>
+        <div><span class="badge" id="dcBadge"></span></div>
+        <div class="diffs" id="dcDiffs"></div>
+        <div class="kv" id="dcKv"></div>
+      </div>
+      <div class="dc-right">
+        <div class="lb-tabs">
+          <div class="lb-tab on" onclick="lbTab(this,'global')" id="tabGlobal">글로벌</div>
+          <div class="lb-tab" onclick="lbTab(this,'friend')">친구</div>
+          <div class="lb-tab" onclick="lbTab(this,'local')">내 기록</div>
+        </div>
+        <div class="lb" id="lbBody"></div>
+      </div>
+    </div>
+    <div class="foot">
+      <span class="steplabel"><span class="key p">1</span><span class="key p">3</span> 난이도</span>
+      <span class="steplabel">배속</span>
+      <div class="stepper">
+        <button onclick="chgSpeed(-0.5)">−</button>
+        <div class="val mono spdVal">2.5</div>
+        <button onclick="chgSpeed(0.5)">＋</button>
+      </div>
+      <span class="steplabel">0.5 단위 · 세부 조정은 설정에서</span>
+      <div class="spacer"></div>
+      <button class="btn" onclick="go('scr-select')">← 선곡으로</button>
+      <button class="btn start" onclick="alert('(인게임 진입 — 목업 범위 밖)')">Press <b>[5]</b> To Start</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SETTINGS ═══════════ -->
+  <div class="screen" id="scr-settings">
+    <div class="papertex"></div>
+    <div class="topbar"><h2><em>ERI‖:</em> SETTINGS</h2>
+      <button class="btn" style="padding:6px 16px;font-size:13px" onclick="go('scr-title')">← 돌아가기</button>
+    </div>
+    <div class="set-car">
+      <button class="car-arrow left" onclick="setNav(-1)">◀</button>
+      <button class="car-arrow right" onclick="setNav(1)">▶</button>
+      <div class="set-track" id="setTrack">
+        <div class="set-page">
+          <div class="set-card pcard">
+            <h4>OFFSET</h4>
+            <div class="set-row">
+              <div>Input Timing<span class="hint">입력 판정 보정 · 스텝 단위 (ms 미노출)</span></div>
+              <div class="stepper">
+                <button onclick="chgOffset(-0.5)">−</button>
+                <div class="val mono" id="offsetVal">-1.5</div>
+                <button onclick="chgOffset(0.5)">＋</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <div>Music Sync<span class="hint">노트-음악 동기화 보정 · 스텝 단위</span></div>
+              <div class="stepper">
+                <button onclick="chgSync(-0.5)">−</button>
+                <div class="val mono" id="syncVal">+0.0</div>
+                <button onclick="chgSync(0.5)">＋</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <div>캘리브레이션<span class="hint">비트에 맞춰 탭 → 두 값 자동 제안</span></div>
+              <button class="btn lav" style="padding:8px 18px;font-size:13px" onclick="alert('캘리브레이션 마법사 (목업)')">시작</button>
+            </div>
+            <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Offsets saved!')">Save</button>
+              <button class="btn" onclick="setFeedback(this,'Offsets reset.')">Reset</button>
+              <span class="set-fb"></span></div>
+          </div>
+        </div>
+        <div class="set-page">
+          <div class="set-card pcard">
+            <h4>PLAY SETTINGS</h4>
+            <div class="set-row"><div>Grow Time<span class="hint">노트 커지는 시간 (초) — 작을수록 빠름</span></div>
+              <div class="sld"><input type="range" min="0" max="2" step="0.05" value="0.85" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">0.85</span></div></div>
+            <div class="set-row"><div>Appear Lead<span class="hint">노트 등장 리드 (초)</span></div>
+              <div class="sld"><input type="range" min="0" max="2" step="0.05" value="1.20" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">1.20</span></div></div>
+            <div class="set-row"><div>Perfect SFX Volume</div>
+              <div class="sld"><input type="range" min="0" max="100" step="1" value="100" oninput="this.parentNode.querySelector('span').textContent=this.value+'%'"><span class="mono">100%</span></div></div>
+            <div class="set-row"><div>Mouse Sensitivity<span class="hint">0.1 ~ 2.0</span></div>
+              <div class="sld"><input type="range" min="0.1" max="2" step="0.05" value="1.00" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">1.00</span></div></div>
+            <div class="set-row"><div>감도 사용</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-row"><div>배속<span class="hint">0.5 단위 · Decide 퀵배속과 동일 값</span></div>
+              <div class="stepper"><button onclick="chgSpeed(-0.5)">−</button>
+                <div class="val mono spdVal">2.5</div><button onclick="chgSpeed(0.5)">＋</button></div></div>
+            <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Settings saved!')">Save</button>
+              <button class="btn" onclick="setFeedback(this,'Settings reset!')">Reset</button>
+              <span class="set-fb"></span></div>
+          </div>
+        </div>
+        <div class="set-page">
+          <div class="set-card pcard">
+            <h4>VIEW SETTINGS</h4>
+            <div class="set-row"><div>전체화면<span class="hint">즉시 적용</span></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Settings saved!')">Save</button>
+              <button class="btn" onclick="setFeedback(this,'Settings reset!')">Reset</button>
+              <span class="set-fb"></span></div>
+          </div>
+        </div>
+        <div class="set-page">
+          <div class="set-card pcard">
+            <h4>PLAYER SETTINGS</h4>
+            <div class="set-row"><div>닉네임<span class="hint">Save 시 게임이 재시작됨!</span></div>
+              <input class="search" style="width:180px" value="DANNY"></div>
+            <div class="set-row"><div>레이팅<span class="hint">official·ranked 무변조 상위 30개 합산</span></div>
+              <b class="mono" style="color:var(--d-normal)">1873.42</b></div>
+            <div class="set-row"><div>상태</div><span style="color:#3e9e5f;font-size:13px">● 로그인됨</span></div>
+            <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Clicking save will restart the game!')">Save</button>
+              <button class="btn" onclick="setFeedback(this,'Reset to default name.')">Reset</button>
+              <span class="set-fb"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="set-dots" id="setDots"></div>
+  </div>
+
+  <div id="modal"><div class="box"><p>게임을 종료할까?</p>
+    <button class="btn" onclick="closeModal()">취소</button>
+    <button class="btn lav" onclick="closeModal();alert('(종료 — 목업)')">종료</button>
+  </div></div>
+
+  <div class="hotkeys">넘패드: 4/6 카드·설정탭 · 1/3 난이도 · 5 결정 · 9 설정 · Esc 뒤로 · 폴더 이동은 마우스</div>
+</div>
+
+<script>
+// ─── 데이터 ───
+// 실존 리듬게임 곡명 (제목/아티스트만 차용 — 비상업 목업용 더미 데이터)
+// [제목, 아티스트, charter, tier, bpm, 길이(초), 버전, 업로드일, diffs, pb점수(0=없음)]
+const RAW=[
+ ["FREEDOM DiVE","xi","보리차","official",222,258,"v2.1","2025-03-14",[["Hard",12],["Master",15]],997120],
+ ["Blue Zenith","xi","대니","official",200,243,"v1.3","2025-06-02",[["Hard",11],["Master",14]],985400],
+ ["Halcyon","xi","tgim","official",191,232,"v1.0","2025-01-12",[["Normal",7],["Hard",10]],991230],
+ ["Ascension to Heaven","xi","보리차","ranked",200,262,"v1.1","2025-08-21",[["Hard",11],["Master",13]],0],
+ ["Bad Apple!!","nomico","pobadoba","official",138,219,"v3.0","2025-02-05",[["Easy",2],["Normal",5],["Hard",8]],999180],
+ ["Grievous Lady","Team Grimoire vs Laur","대니","ranked",210,136,"v1.2","2025-11-30",[["Hard",12],["Master",15]],962330],
+ ["Fracture Ray","Sakuzyo","보리차","ranked",200,141,"v1.0","2025-10-17",[["Hard",11],["Master",14]],0],
+ ["Tempestissimo","t+pazolite","tgim","ranked",231,146,"v2.0","2026-01-08",[["Master",15]],941020],
+ ["Oshama Scramble!","t+pazolite","pino","official",210,122,"v1.4","2025-04-27",[["Normal",8],["Hard",11]],988560],
+ ["Garakuta Doll Play","t+pazolite","pino","ranked",228,127,"v1.1","2025-09-09",[["Hard",12],["Master",14]],973890],
+ ["Marenol","LeaF","대니","unranked",170,133,"v0.9","2026-05-22",[["Master",14]],0],
+ ["Doppelganger","LeaF","tgim","ranked",185,138,"v1.0","2025-12-14",[["Hard",10],["Master",13]],979840],
+ ["Aleph-0","LeaF","보리차","ranked",200,144,"v1.2","2026-02-19",[["Master",15]],0],
+ ["Calamity Fortune","LeaF","pobadoba","ranked",200,131,"v1.0","2025-07-07",[["Hard",11],["Master",13]],968770],
+ ["Fastest Crash","Camellia","대니","ranked",234,196,"v1.1","2026-03-03",[["Hard",12],["Master",14]],952210],
+ ["Exit This Earth's Atomosphere","Camellia","보리차","official",170,266,"v1.0","2025-05-16",[["Normal",8],["Hard",11],["Master",13]],981930],
+ ["GHOST","Camellia","tgim","ranked",220,247,"v1.3","2026-04-11",[["Master",14]],0],
+ ["crystallized","Camellia","seno","official",174,251,"v2.2","2025-03-29",[["Normal",6],["Hard",9]],993410],
+ ["Conflict","siromaru + cranky","seno","official",160,124,"v1.5","2025-01-25",[["Easy",4],["Hard",9],["Master",12]],996520],
+ ["FLOWER","DJ YOSHITAKA","pobadoba","official",173,119,"v2.0","2025-02-18",[["Normal",7],["Hard",10]],994710],
+ ["冥","Amuro vs Killer","보리차","ranked",200,129,"v1.0","2026-06-06",[["Master",15]],0],
+ ["AA","D.J.Amuro","대니","ranked",154,117,"v1.1","2025-10-02",[["Hard",10],["Master",12]],984300],
+ ["V","TAKA","tgim","official",150,114,"v2.1","2025-04-08",[["Normal",6],["Hard",9],["Master",11]],990870],
+ ["MAX 300","Ω","pino","ranked",300,96,"v1.0","2026-01-27",[["Master",13]],921040],
+ ["PARANOiA","180","seno","official",180,103,"v3.1","2025-01-31",[["Easy",3],["Normal",6],["Hard",9]],997750],
+ ["Fascination MAXX","100-200-400","대니","ranked",200,108,"v1.2","2026-05-01",[["Hard",12],["Master",14]],0],
+ ["Altale","Sakuzyo","pobadoba","official",90,141,"v1.6","2025-06-24",[["Easy",1],["Normal",4],["Hard",7]],998910],
+ ["Brain Power","NOMA","tgim","unranked",145,169,"v0.8","2026-06-30",[["Normal",7],["Hard",10]],956780],
+ ["Lachryma《Re:Queen'M》","かねこちはる","보리차","ranked",236,133,"v1.0","2026-07-18",[["Hard",13],["Master",15]],0],
+ ["Igallta","Se-U-Ra","대니","unranked",216,142,"v0.9","2026-07-02",[["Master",15]],0],
+];
+const GRADE=s=>s>=995000?"SS":s>=980000?"S":s>=960000?"A":s>=930000?"B":"C";
+const songs=RAW.map(r=>({t:r[0],a:r[1],ch:r[2],tier:r[3],bpm:r[4],sec:r[5],ver:r[6],date:r[7],diffs:r[8],
+  pb:r[9]?{score:r[9],acc:(94+ (r[9]%50000)/50000*5.9).toFixed(2)+"%",rank:GRADE(r[9])}:null}));
+const fmtLen=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+// 재킷 색은 제목 해시로 생성 (더미)
+function hue(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return h}
+const diffColor={Easy:"#5a8c46",Normal:"#a08228",Hard:"#963c32",Master:"#555"};
+
+// ─── 필터/정렬/폴더 상태 ───
+let sortMode="lvAsc",query="",fTier={official:true,ranked:true,unranked:true},fCleared=false,fCharter=false;
+const ORDER=['Easy','Normal','Hard','Master'];
+let cursorName='Normal';   // 글로벌 난이도 커서 (곡 단위 표시용, 정렬에 관여 X)
+let unitCount=0,totalUnits=0;
+const chartMode=()=>sortMode==='lvAsc'||sortMode==='lvDesc';
+function pickDiffIdx(s){let best=0,bd=99;
+  s.diffs.forEach((d,i)=>{const dist=Math.abs(ORDER.indexOf(d[0])-ORDER.indexOf(cursorName));
+    if(dist<bd){bd=dist;best=i}});return best}
+
+function filteredSongs(){
+  let v=songs.filter(s=>fTier[s.tier]);
+  if(fCleared)v=v.filter(s=>s.pb);
+  if(fCharter)v=v.filter(s=>s.ch==="보리차");
+  if(query){const q=query.toLowerCase();v=v.filter(s=>(s.t+s.a+s.ch).toLowerCase().includes(q))}
+  return v;
+}
+// 나열 단위: 난이도 정렬이면 차트({s,di}), 아니면 곡({s})
+function sortedUnits(){
+  const v=filteredSongs();
+  if(chartMode()){
+    const units=[];v.forEach(s=>s.diffs.forEach((d,di)=>units.push({s,di})));
+    units.sort((a,b)=>sortMode==='lvAsc'
+      ?a.s.diffs[a.di][1]-b.s.diffs[b.di][1]
+      :b.s.diffs[b.di][1]-a.s.diffs[a.di][1]);
+    return units;
+  }
+  const cmp={title:(a,b)=>a.t.localeCompare(b.t),artist:(a,b)=>a.a.localeCompare(b.a),
+    bpm:(a,b)=>a.bpm-b.bpm,len:(a,b)=>a.sec-b.sec,
+    charter:(a,b)=>a.ch.localeCompare(b.ch,'ko'),date:(a,b)=>b.date.localeCompare(a.date),
+    ver:(a,b)=>b.ver.localeCompare(a.ver,undefined,{numeric:true})}[sortMode];
+  return v.sort(cmp).map(s=>({s}));
+}
+// 폴더 키 = 정렬 기준의 그룹 헤더
+function folderKey(u){const s=u.s;
+  switch(sortMode){
+    case 'lvAsc':case 'lvDesc':return 'Lv.'+s.diffs[u.di][1];
+    case 'title':return s.t[0].toUpperCase();
+    case 'artist':return s.a[0].toUpperCase();
+    case 'charter':return s.ch;
+    case 'date':return s.date.slice(0,7);
+    case 'ver':return s.ver.split('.')[0]+'.x';
+    case 'bpm':return s.bpm<120?'~119':s.bpm<160?'120~':s.bpm<200?'160~':'200+';
+    case 'len':return s.sec<120?'~2:00':s.sec<180?'2:00~':'3:00~';
+  }
+}
+// 캐러셀 = 전체 곡/차트를 쭉 이어서. 폴더는 포커스 점프용 네비게이션일 뿐
+let items=[],groupKeys=[],groupStart={},groupCount={};
+function buildItems(){
+  items=sortedUnits();
+  unitCount=items.length;
+  totalUnits=chartMode()?songs.reduce((n,s)=>n+s.diffs.length,0):songs.length;
+  groupKeys=[];groupStart={};groupCount={};
+  if(query)return;
+  items.forEach((u,i)=>{const k=folderKey(u);
+    if(groupStart[k]===undefined){groupStart[k]=i;groupCount[k]=0;groupKeys.push(k)}
+    groupCount[k]++});
+}
+const curFolder=()=>items.length?folderKey(items[Math.min(focused,items.length-1)]):null;
+function setSort(m){sortMode=m;focused=0;refreshView()}
+function setQuery(q){query=q.trim();focused=0;refreshView()}
+function toggleChip(el){
+  el.classList.toggle('on');const on=el.classList.contains('on');
+  const f=el.dataset.f;
+  if(f==='cleared')fCleared=on;else if(f==='charter')fCharter=on;else fTier[f]=on;
+  refreshView();
+}
+function refreshView(){
+  buildItems();
+  if(focused>=items.length)focused=Math.max(0,items.length-1);
+  renderCarousel();
+}
+// 폴더 조작 (1/3 또는 폴더 바) — 포커스를 폴더 시작점으로 점프
+function folderJump(dir){
+  if(!groupKeys.length)return;
+  const i=groupKeys.indexOf(curFolder());
+  const ni=Math.max(0,Math.min(groupKeys.length-1,i+dir));
+  if(ni===i&&focused===groupStart[groupKeys[i]])return;
+  // 이전 방향인데 이미 폴더 중간이면 현재 폴더 시작점으로
+  focused=groupStart[groupKeys[(dir<0&&focused>groupStart[groupKeys[i]])?i:ni]];
+  renderCarousel();
+}
+function jumpFolder(key){if(groupStart[key]!==undefined){focused=groupStart[key];renderCarousel()}}
+function setCursor(name){cursorName=name;renderCarousel()}
+function cursorMove(d){ // 1/3: 포커스 곡의 난이도 커서 이동 (곡 단위 모드)
+  const it=items[focused];if(!it)return;
+  const cur=pickDiffIdx(it.s);
+  const ni=Math.max(0,Math.min(it.s.diffs.length-1,cur+d));
+  setCursor(it.s.diffs[ni][0]);
+}
+function moveCard(d){if(!items.length)return;
+  focused=Math.max(0,Math.min(items.length-1,focused+d));renderCarousel()}
+// 설정 캐러셀
+let setIdx=0;const SET_PAGES=['OFFSET','PLAY','VIEW','PLAYER'];
+function setNav(d){setIdx=Math.max(0,Math.min(SET_PAGES.length-1,setIdx+d));renderSet()}
+function renderSet(){
+  document.getElementById('setTrack').style.transform=`translateX(${-setIdx*100}%)`;
+  document.getElementById('setDots').innerHTML=
+    SET_PAGES.map((p,i)=>`<span class="set-dot ${i===setIdx?'on':''}" onclick="setIdx=${i};renderSet()"></span>`).join('')+
+    `<span class="set-dot-label">${SET_PAGES[setIdx]}</span>`;
+}
+const lb={
+ global:[
+  {r:1,n:"KIRIN",s:999120,acc:"99.87%",sp:"3.0"},{r:2,n:"unag1",s:997450,acc:"99.62%",sp:"2.5"},
+  {r:3,n:"보리차",s:995810,acc:"99.40%",sp:"2.0"},{r:14,n:"DANNY",s:987230,acc:"98.42%",sp:"2.5",me:1},
+  {r:15,n:"tgim",s:986900,acc:"98.39%",sp:"3.5"},{r:16,n:"parry_god",s:985110,acc:"98.21%",sp:"2.0"}],
+ friend:[
+  {r:1,n:"보리차",s:995810,acc:"99.40%",sp:"2.0"},{r:2,n:"DANNY",s:987230,acc:"98.42%",sp:"2.5",me:1},
+  {r:3,n:"tgim",s:986900,acc:"98.39%",sp:"3.5"}],
+ local:[
+  {r:1,n:"07-20",s:987230,acc:"98.42%",sp:"2.5",me:1},{r:2,n:"07-18",s:975400,acc:"97.80%",sp:"2.5"},
+  {r:3,n:"07-11",s:951200,acc:"96.55%",sp:"2.0"}]
+};
+let focused=0,speed=2.5,offset=-1.5,titlePhase=0,dcSong=null,dcDi=0;
+const CARD_W=240,GAP=24;
+
+// ─── FMOD 스플래시 → 타이틀 ───
+let splashDone=false;
+function endSplash(){
+  if(splashDone)return;splashDone=true;
+  document.getElementById('splash').classList.add('fade');
+  setTimeout(()=>document.getElementById('splash').remove(),700);
+}
+setTimeout(endSplash,2200); // 자동 진행. 아무 키로 스킵 가능
+
+// ─── 타이틀 단계 ───
+function titleAdvance(){
+  if(!splashDone){endSplash();return}
+  if(titlePhase===0){titlePhase=1;document.getElementById('scr-title').classList.add('menu-mode')}
+}
+
+// ─── 화면 전환 ───
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='scr-decide')renderDecide();
+  if(id==='scr-title'&&titlePhase===1)document.getElementById('scr-title').classList.add('menu-mode');}
+function openModal(){document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+// ─── 선곡 캐러셀 (기존 SongCard 프리팹 구조 차용) ───
+const tierBadge=t=>`<span class="badge ${t}">${t.toUpperCase()}</span>`;
+function jstyle(s){const h=hue(s.t);
+  return `background:linear-gradient(135deg,hsl(${h},52%,55%),hsl(${(h+45)%360},48%,26%))`}
+function renderCarousel(){
+  const track=document.getElementById('carTrack');
+  document.getElementById('songCount').textContent=
+    `${unitCount} / ${totalUnits}${chartMode()?'차트':'곡'}${query?' (검색: 폴더 해제)':''}`;
+  // 중앙 상단 폴더 바
+  const fb=document.getElementById('folderBar');
+  if(query||!groupKeys.length){fb.style.display='none'}
+  else{fb.style.display='flex';
+    const cur=curFolder(),gi=groupKeys.indexOf(cur);
+    const prev=groupKeys[gi-1],next=groupKeys[gi+1];
+    document.getElementById('folderChips').innerHTML=
+      `<span class="fb-chip side ${prev===undefined?'ghost':''}" ${prev!==undefined?`onclick="jumpFolder('${prev}')"`:''}>${prev??'·'}</span>`+
+      `<span class="fb-chip on" onclick="jumpFolder('${cur}')">${cur} <small>${groupCount[cur]}</small></span>`+
+      `<span class="fb-chip side ${next===undefined?'ghost':''}" ${next!==undefined?`onclick="jumpFolder('${next}')"`:''}>${next??'·'}</span>`;
+  }
+  track.innerHTML=items.map((it,i)=>{
+    const s=it.s,di=it.di!==undefined?it.di:pickDiffIdx(s),d=s.diffs[di];
+    return `
+   <div class="scard ${i===focused?'focused':''}" onclick="cardClick(${i})" ondblclick="cardDbl(${i})">
+     <div class="sc-jacket" style="${jstyle(s)}"></div>
+     <div class="sc-diff" style="background:${diffColor[d[0]]}">${d[1]}</div>
+     <div class="sc-tier">${tierBadge(s.tier)}</div>
+     <div class="sc-overlay">
+       <div class="sc-t">${s.t}</div>
+       <div class="sc-a">${s.a}${chartMode()?` · <b style="color:#fff">${d[0]}</b>`:''}</div>
+       <div class="sc-pb">${s.pb
+         ?`<span class="grade">${s.pb.rank}</span><span class="score mono">${s.pb.score.toLocaleString()}</span>`
+         :`<span class="noplay">NO PLAY</span>`}</div>
+     </div>
+   </div>`}).join('');
+  track.style.transform=`translateX(${-(focused*(CARD_W+GAP)+CARD_W/2)}px)`;
+  renderDetail();
+}
+function cardClick(i){focused=i;renderCarousel()}
+function cardDbl(i){focused=i;tryDecide()}
+function tryDecide(){
+  const it=items[focused];if(!it)return;
+  dcSong=it.s;dcDi=it.di!==undefined?it.di:pickDiffIdx(it.s);
+  go('scr-decide');
+}
+function renderDetail(){
+  const it=items[focused];
+  const dB=document.getElementById('dBadge');
+  if(!it){document.getElementById('dTitleSmall').textContent='조건에 맞는 곡 없음';
+    dB.className='badge';dB.textContent='—';
+    document.getElementById('dDiffs').innerHTML='';document.getElementById('dKv').innerHTML='필터/검색 조건을 완화해 보셈';return}
+  const s=it.s;
+  dB.className='badge '+s.tier;dB.textContent=s.tier.toUpperCase();
+  document.getElementById('dTitleSmall').textContent=s.t+' — '+s.a;
+  if(chartMode()){ // 차트 단위: 난이도 선택 없음, 해당 차트 고정 표시
+    const d=s.diffs[it.di];
+    document.getElementById('dDiffs').innerHTML=
+      `<div class="diff sel" style="background:${diffColor[d[0]]};cursor:default">${d[0]} ${d[1]}</div>`+
+      `<span style="font-size:11px;color:var(--txt-dim);font-weight:700;align-self:center;margin-left:6px">난이도 정렬 = 차트 단위 (다른 난이도는 해당 Lv 폴더에)</span>`;
+  }else{ // 곡 단위: 커서 = 표시용, 클릭으로만 변경 (확정은 Decide에서 1/3)
+    const cur=pickDiffIdx(s);
+    document.getElementById('dDiffs').innerHTML=s.diffs.map((d,i)=>
+      `<div class="diff ${i===cur?'sel':''}" style="background:${diffColor[d[0]]}" onclick="setCursor('${d[0]}')">${d[0]} ${d[1]}</div>`).join('');
+  }
+  document.getElementById('dKv').innerHTML=
+    `charter <b>${s.ch}</b> · BPM <b>${s.bpm}</b> · 길이 <b>${fmtLen(s.sec)}</b> · 차트 <b>${s.ver}</b> · 업로드 <b>${s.date}</b>`+
+    (s.pb?`<br>개인 베스트 <b class="mono">${s.pb.score.toLocaleString()}</b> (${s.pb.acc} · ${s.pb.rank})`:`<br>플레이 기록 없음`)+
+    (s.tier==='unranked'?` · <span style="color:#c22742;font-size:12px;font-weight:800">⚠ UNRANKED — 레이팅·글로벌 리더보드 비반영</span>`:'');
+}
+
+// ─── Decide ───
+function dcChangeDiff(dir){ // Decide에서 1/3로 난이도 변경
+  if(!dcSong)return;
+  dcSetDiff(dcDi+dir);
+}
+function dcSetDiff(i){
+  if(!dcSong)return;
+  dcDi=Math.max(0,Math.min(dcSong.diffs.length-1,i));
+  cursorName=dcSong.diffs[dcDi][0]; // 글로벌 커서도 갱신
+  renderDecide();
+}
+function renderDecide(){
+  const s=dcSong;if(!s){go('scr-select');return}
+  const d=s.diffs[dcDi];
+  document.getElementById('dcJacket').style=jstyle(s)+';width:170px;height:170px;border-radius:16px;border:4px solid #fff;box-shadow:0 4px 16px rgba(80,70,50,.3)';
+  document.getElementById('dcTitle').textContent=s.t;
+  document.getElementById('dcArtist').textContent=s.a;
+  const b=document.getElementById('dcBadge');b.className='badge '+s.tier;b.textContent=s.tier.toUpperCase();
+  document.getElementById('dcDiffs').innerHTML=s.diffs.map((dd,i)=>
+    `<div class="diff ${i===dcDi?'sel':''}" style="background:${diffColor[dd[0]]}" onclick="dcSetDiff(${i})">${dd[0]} ${dd[1]}</div>`).join('');
+  document.getElementById('dcKv').innerHTML=
+    `charter <b>${s.ch}</b> · BPM <b>${s.bpm}</b> · 길이 <b>${fmtLen(s.sec)}</b><br>`+
+    `차트 <b>${s.ver}</b> · 업로드 <b>${s.date}</b><br>`+
+    (s.pb?`개인 베스트 <b class="mono">${s.pb.score.toLocaleString()}</b> (${s.pb.acc} · ${s.pb.rank})`:`플레이 기록 없음`);
+  const g=document.getElementById('tabGlobal');
+  if(s.tier==='unranked'){g.classList.add('disabled');lbTab(document.querySelectorAll('.lb-tab')[2],'local')}
+  else{g.classList.remove('disabled');lbTab(g,'global')}
+}
+function lbTab(el,key){
+  if(el.classList.contains('disabled')){
+    document.getElementById('lbBody').innerHTML='<div class="lb-note">UNRANKED 차트 — 글로벌 리더보드가 없음.<br>내 기록 탭에서 로컬 기록만 확인 가능</div>';return}
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+  const rows=lb[key].map(r=>`<tr class="${r.me?'me':''}"><td class="${r.r===1?'rk1':''}">#${r.r}</td>
+    <td>${r.n}</td><td class="mono">${r.s.toLocaleString()}</td><td>${r.acc}</td><td>×${r.sp}</td></tr>`).join('');
+  document.getElementById('lbBody').innerHTML=
+    `<table><tr><th>RANK</th><th>${key==='local'?'날짜':'PLAYER'}</th><th>SCORE</th><th>ACC</th><th>SPEED</th></tr>${rows}</table>`;
+}
+
+// ─── 설정 컨트롤 ───
+function chgOffset(d){offset=Math.min(8,Math.max(-8,offset+d));
+  document.getElementById('offsetVal').textContent=(offset>0?'+':'')+offset.toFixed(1)}
+let sync=0;
+function chgSync(d){sync=Math.min(8,Math.max(-8,sync+d));
+  document.getElementById('syncVal').textContent=(sync>=0?'+':'')+sync.toFixed(1)}
+// 배속: 0.5 단위, Decide/설정 동기화 단일 값
+function chgSpeed(d){speed=Math.min(9.5,Math.max(0.5,speed+d));
+  document.querySelectorAll('.spdVal').forEach(e=>e.textContent=speed.toFixed(1))}
+function setFeedback(btn,msg){
+  const fb=btn.closest('.set-card').querySelector('.set-fb');
+  fb.textContent=msg;fb.style.opacity=1;
+  clearTimeout(fb._t);fb._t=setTimeout(()=>fb.style.opacity=0,2000);
+}
+
+// ─── 키보드 ───
+document.addEventListener('keydown',e=>{
+  if(!splashDone){endSplash();return}
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){
+    if(e.key==='Escape')e.target.blur();return} // 검색창 입력 중엔 단축키 무시
+  const cur=document.querySelector('.screen.active').id;
+  const k=e.key;
+  if(cur==='scr-title'&&titlePhase===0){titleAdvance();return}
+  if(k==='Escape'){
+    if(document.getElementById('modal').classList.contains('open'))closeModal();
+    else if(cur==='scr-select')go('scr-title');
+    else if(cur==='scr-decide')go('scr-select');
+    else if(cur==='scr-settings')go('scr-title');
+    return;
+  }
+  if(cur==='scr-select'){
+    if(!items.length){if(k==='9')go('scr-settings');return}
+    if(k==='ArrowRight'||k==='6')moveCard(1);
+    if(k==='ArrowLeft'||k==='4')moveCard(-1);
+    if((k==='ArrowUp'||k==='3')&&!chartMode())cursorMove(1);
+    if((k==='ArrowDown'||k==='1')&&!chartMode())cursorMove(-1);
+    if(k==='Enter'||k==='5')tryDecide();
+    if(k==='9')go('scr-settings');
+  }else if(cur==='scr-title'){
+    if(k==='Enter'||k==='5')go('scr-select');
+    if(k==='9')go('scr-settings');
+    if(k==='i'||k==='I')alert('차트 임포트: 폴더 선택 / mc·osu·sm 포맷 변환 (목업)');
+  }else if(cur==='scr-decide'){
+    if(k==='ArrowUp'||k==='3')dcChangeDiff(1);
+    if(k==='ArrowDown'||k==='1')dcChangeDiff(-1);
+  }else if(cur==='scr-settings'){
+    if(k==='ArrowRight'||k==='6')setNav(1);
+    if(k==='ArrowLeft'||k==='4')setNav(-1);
+  }
+});
+
+// 클릭한 버튼/셀렉트에 포커스가 남아 넘패드 입력을 가로채는 것 방지
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,select');
+  if(b&&b.tagName==='BUTTON')b.blur();
+});
+
+refreshView();
+renderSet();
+</script>
+</body>
+</html>
