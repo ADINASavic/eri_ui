@@ -1,30 +1,832 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ERI: 아웃게임 — 인덱스</title>
+<title>ERI — Outgame Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Baloo+2:wght@800&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-       background:#050505;color:#f2e9e9;font-family:'Segoe UI','Malgun Gothic',sans-serif;gap:28px}
-  .logo{font-size:88px;font-weight:900;color:#ff2d4d;letter-spacing:2px;
-        text-shadow:0 0 18px rgba(255,45,77,.55),0 0 60px rgba(255,45,77,.4)}
-  .sub{color:#ff2d4d;letter-spacing:8px;font-size:13px;margin-top:-18px}
-  .links{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
-  a.card{display:block;padding:22px 40px;border:2px solid #3a1520;border-radius:14px;color:#f2e9e9;
-         text-decoration:none;font-weight:800;font-size:18px;letter-spacing:2px;transition:.15s;background:#0d0d0f}
-  a.card:hover{border-color:#ff2d4d;color:#ff2d4d;box-shadow:0 0 18px rgba(255,45,77,.4)}
-  a.card small{display:block;font-size:12px;letter-spacing:0;color:#8f8a80;font-weight:600;margin-top:6px}
+  :root{
+    --bg:#efe9d9; --panel:#faf6ec; --panel2:#e7e0cd; --line:#d8d0bc;
+    --txt:#2b2b2b; --txt-dim:#8a8474;
+    --cream:#faf6ec; --ink:#2b2b2b; --charcoal:#323232;
+    --lav:#dbdeea; --lav-line:#9aa0b5;
+    --neon:#ff2d4d; --neon-glow:rgba(255,45,77,.55); --yellow:#ffd23e;
+    --d-easy:#5a8c46; --d-normal:#a08228; --d-hard:#963c32; --d-master:#555;
+    --k-orange:#e87a2e; --k-teal:#5ecfcf; --k-red:#e0304a; --k-purple:#c08ae0; --k-gray:#a5a5a5; --k-tan:#e6c9a3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+  body{background:#08070a;color:var(--txt);display:flex;align-items:center;justify-content:center;min-height:100vh;
+       font-family:'Montserrat','Malgun Gothic',sans-serif}
+  #stage{width:1280px;height:720px;position:relative;overflow:hidden;background:var(--bg);
+         border-radius:10px;box-shadow:0 0 80px rgba(0,0,0,.8)}
+  .papertex{position:absolute;inset:0;pointer-events:none;opacity:.55;
+    background-image:radial-gradient(ellipse 300px 200px at 20% 30%,rgba(255,255,255,.5),transparent 60%),
+      radial-gradient(ellipse 250px 300px at 75% 60%,rgba(255,255,255,.35),transparent 60%),
+      radial-gradient(ellipse 350px 250px at 85% 15%,rgba(255,255,255,.28),transparent 60%)}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column}
+  .screen.active{display:flex;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .mono{font-variant-numeric:tabular-nums}
+
+  .key{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
+       border-radius:6px;color:#fff;font-weight:800;font-size:13px;padding:0 5px;
+       box-shadow:0 2px 0 rgba(0,0,0,.35);vertical-align:middle}
+  .key.o{background:var(--k-orange)}.key.t{background:var(--k-teal)}.key.r{background:var(--k-red)}
+  .key.p{background:var(--k-purple)}.key.g{background:var(--k-gray)}.key.n{background:var(--k-tan);color:#5a4a30}
+  .legend{display:flex;gap:14px;align-items:center;font-size:12px;font-weight:700;color:#cfcfcf;flex-wrap:wrap}
+  .legend .lbl{margin-left:4px}
+
+  .badge{display:inline-block;font-size:10px;font-weight:900;letter-spacing:1.2px;
+         padding:3px 9px;border-radius:11px;color:#fff;vertical-align:middle}
+  .badge.official{background:var(--k-red)}
+  .badge.ranked{background:var(--d-normal)}
+  .badge.unranked{background:#5a5a60}
+
+  .btn{background:var(--panel2);border:2px solid var(--line);color:var(--txt);
+       padding:10px 24px;font-size:15px;font-weight:800;cursor:pointer;border-radius:14px;
+       font-family:inherit;transition:.12s;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .btn:hover{border-color:var(--neon);color:var(--neon)}
+  .btn:active{transform:translateY(1px);box-shadow:none}
+  .btn.lav{background:var(--lav);border-color:var(--lav-line);color:var(--ink)}
+  .btn.start{background:var(--neon);border-color:var(--neon);color:#fff;font-weight:900;font-size:16px;
+             box-shadow:0 3px 0 #b31530}
+  .btn.start:hover{color:#fff;filter:brightness(1.05)}
+  .pcard{background:var(--panel);border:2px solid var(--line);border-radius:16px;box-shadow:0 3px 10px rgba(80,70,50,.15)}
+
+  /* ═══ FMOD splash ═══ */
+  #splash{position:absolute;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center;
+          transition:opacity .6s ease}
+  #splash.fade{opacity:0;pointer-events:none}
+  #splash .fmod{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:150px;color:#fff;
+                letter-spacing:-4px;line-height:1;position:relative}
+  #splash .fmod sup{font-size:26px;position:absolute;bottom:14px;right:-34px;letter-spacing:0}
+
+  /* ═══ TITLE ═══ */
+  #scr-title{background:#050505;overflow:hidden}
+  .t-char{position:absolute;top:50%;right:16%;transform:translateY(-50%) scale(.62);
+          transition:right .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1);
+          filter:drop-shadow(0 0 14px rgba(255,45,77,.5))}
+  img.t-char{height:640px;width:auto;object-fit:contain}
+  .t-logo{position:absolute;top:50%;left:12%;transform:translateY(-58%);transition:opacity .5s ease,transform .5s ease}
+  .t-logo .logo{font-size:128px;font-weight:900;line-height:1;letter-spacing:2px;color:var(--neon);
+        text-shadow:0 0 18px var(--neon-glow),0 0 60px var(--neon-glow);display:inline-flex;align-items:baseline}
+  .t-logo .bars{transform:translateY(-4px);margin-left:6px;display:inline-block}
+  .t-logo .dots{margin-left:10px}
+  .t-logo .sub{margin-top:10px;color:var(--neon);font-weight:800;letter-spacing:9px;font-size:15px;
+            text-shadow:0 0 12px var(--neon-glow)}
+  .presskey{position:absolute;bottom:70px;left:0;right:0;text-align:center;color:#c9a8ae;
+            font-weight:800;letter-spacing:6px;font-size:15px;animation:blink 1.6s infinite}
+  @keyframes blink{0%,100%{opacity:.9}50%{opacity:.15}}
+  .t-menu{position:absolute;top:50%;left:10%;transform:translateY(-50%) translateX(-60px);
+          display:flex;flex-direction:column;gap:16px;width:320px;opacity:0;pointer-events:none;
+          transition:opacity .5s ease .25s,transform .5s cubic-bezier(.2,.8,.2,1) .25s}
+  .t-menu .small-logo{font-size:44px;font-weight:900;color:var(--neon);
+        text-shadow:0 0 14px var(--neon-glow);margin-bottom:10px;letter-spacing:1px}
+  .tbtn{background:rgba(13,13,15,.9);border:2px solid #3a1520;color:#f2e9e9;padding:15px 22px;text-align:left;
+        font-size:18px;font-weight:800;letter-spacing:3px;border-radius:12px;cursor:pointer;transition:.15s;
+        font-family:inherit;display:flex;align-items:center}
+  .tbtn:hover{border-color:var(--neon);color:var(--neon);box-shadow:0 0 18px var(--neon-glow);
+              text-shadow:0 0 8px var(--neon-glow);transform:translateX(6px)}
+  .tbtn .k{font-size:11px;color:#7d5560;margin-left:auto;letter-spacing:0}
+  #scr-title.menu-mode .t-logo{opacity:0;transform:translateY(-58%) translateX(-40px);pointer-events:none}
+  #scr-title.menu-mode .presskey{display:none}
+  #scr-title.menu-mode .t-char{right:8%;transform:translateY(-50%) scale(.78)}
+  #scr-title.menu-mode .t-menu{opacity:1;pointer-events:auto;transform:translateY(-50%) translateX(0)}
+  #scr-title.menu-mode .profile{opacity:1}
+  .profile{position:absolute;top:22px;right:22px;display:flex;align-items:center;gap:12px;opacity:0;transition:opacity .5s ease .3s;
+    background:#0d0d0f;border:2px solid #2a2a30;border-radius:14px;padding:10px 16px;color:#eee;z-index:3}
+  .profile .avatar{width:38px;height:38px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd23e 30%,var(--neon) 75%)}
+  .profile .name{font-weight:800;font-size:14px}
+  .profile .rating{font-size:12px;color:var(--yellow);font-weight:700}
+  .profile .online{font-size:10px;color:#5cff8f;font-weight:700}
+
+  /* ═══ SONG SELECT ═══ */
+  /* slim top row — no heavy title bar */
+  .sel-top{display:flex;align-items:center;gap:12px;padding:12px 18px;z-index:3}
+  .icon-btn{width:40px;height:40px;border-radius:12px;border:2px solid var(--line);background:var(--panel);
+    cursor:pointer;font-size:18px;font-weight:900;color:var(--ink);font-family:inherit;flex-shrink:0}
+  .icon-btn:hover{border-color:var(--neon);color:var(--neon)}
+  .search{background:#fff;border:2px solid var(--line);border-radius:10px;color:var(--ink);
+          padding:8px 12px;font-size:13px;width:240px;outline:none;font-family:inherit;font-weight:600}
+  .search:focus{border-color:var(--neon)}
+  .search::placeholder{color:#a8a294}
+  .sortsel{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt-dim);font-weight:700}
+  .sortsel select{background:#fff;color:var(--ink);border:2px solid var(--line);
+                  padding:7px;border-radius:8px;font-size:12px;font-family:inherit;font-weight:700}
+  .count{font-size:12px;color:var(--txt-dim);font-weight:700;transition:opacity .2s}
+  .count.hide{opacity:0}
+  /* right slot: profile ↔ filter chips swap */
+  .right-slot{margin-left:auto;position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:44px}
+  .mini-profile{display:flex;align-items:center;gap:10px;background:var(--charcoal);color:#fff;
+    border-radius:12px;padding:6px 12px 6px 8px;cursor:pointer;transition:.25s}
+  .mini-profile:hover{outline:2px solid var(--neon)}
+  .mini-profile.hide{opacity:0;transform:translateY(16px);pointer-events:none}
+  .mini-profile .av{width:30px;height:30px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ffd23e 30%,var(--neon) 75%)}
+  .mini-profile .mn{font-weight:800;font-size:13px;line-height:1.1}
+  .mini-profile .mr{font-size:10px;color:var(--yellow);font-weight:700}
+  .filter-inline{position:absolute;right:0;top:50%;transform:translateY(-50%) translateX(24px);
+    display:flex;gap:8px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap}
+  .filter-inline.show{opacity:1;transform:translateY(-50%) translateX(0);pointer-events:auto}
+  .fx{display:flex;gap:8px;flex-wrap:nowrap}
+  .chip{padding:4px 13px;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;
+        background:rgba(255,255,255,.7);border:2px solid var(--line);color:var(--txt-dim)}
+  .chip.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff}
+
+  /* folder bookmark bar (center, 3 slots) */
+  .folder-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:2px 120px 4px;z-index:2}
+  .fb-arrow{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;
+            cursor:pointer;font-size:10px;color:var(--ink);font-weight:900;font-family:inherit;flex-shrink:0}
+  .fb-arrow:hover{border-color:var(--neon);color:var(--neon)}
+  .fb-chips{display:flex;gap:6px;align-items:center}
+  .fb-chip{padding:2px 10px;border-radius:11px;font-size:11px;font-weight:800;cursor:pointer;text-align:center;
+    background:rgba(255,255,255,.6);border:2px solid var(--line);color:var(--txt-dim);white-space:nowrap}
+  .fb-chip.side{min-width:80px;opacity:.75}
+  .fb-chip.side:hover{border-color:var(--neon);color:var(--neon)}
+  .fb-chip.ghost{opacity:.2;cursor:default;pointer-events:none}
+  .fb-chip small{font-size:9px;opacity:.7}
+  .fb-chip.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff;min-width:104px;padding:3px 14px;font-size:12px;cursor:pointer}
+  /* folder list — hover dropdown */
+  .folder-zone{position:relative;z-index:7}
+  .fl-drop{position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(-6px);
+    width:660px;max-height:340px;overflow-y:auto;padding:14px 16px;background:var(--panel);
+    border:2px solid var(--line);border-radius:16px;box-shadow:0 16px 44px rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:.15s;margin-top:4px}
+  .folder-zone:hover .fl-drop{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+  .fl-drop h3{font-size:11px;font-weight:900;letter-spacing:1.5px;color:var(--txt-dim);margin-bottom:10px}
+  .fl-grid{display:flex;gap:7px;flex-wrap:wrap}
+  .fl-item{padding:6px 14px;border-radius:11px;font-size:13px;font-weight:800;cursor:pointer;
+    background:rgba(255,255,255,.7);border:2px solid var(--line);color:var(--txt);display:flex;align-items:baseline;gap:6px}
+  .fl-item small{font-size:10px;color:var(--txt-dim);font-weight:700}
+  .fl-item:hover{border-color:var(--neon);color:var(--neon)}
+  .fl-item.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff}
+  .fl-item.on small{color:#cfc9be}
+
+  .car-wrap{position:relative;height:330px;overflow:hidden;flex-shrink:0}
+  .car-track{position:absolute;top:0;left:50%;display:flex;gap:22px;align-items:flex-start;
+             transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  .song-cell{width:190px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;
+             transition:.3s;transform:scale(.86);filter:brightness(.78) saturate(.9);cursor:pointer;
+             transform-origin:top center;padding-top:14px}
+  .song-cell.focused{transform:scale(1.02);filter:none}
+  .scard{width:100%;aspect-ratio:1;border-radius:16px;position:relative;overflow:hidden;
+         border:3px solid var(--line);transition:.3s}
+  .song-cell.focused .scard{border-color:#fff;box-shadow:0 0 0 3px rgba(255,45,77,.5),0 8px 24px rgba(80,70,50,.4)}
+  .sc-jacket{position:absolute;inset:0}
+  .sc-tier{position:absolute;top:10px;right:9px}
+  /* caption below card (DJMAX-style) */
+  .cell-title{margin-top:9px;font-weight:900;font-size:14px;color:var(--txt);max-width:100%;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .cell-artist{font-size:11px;color:var(--txt-dim);font-weight:700;max-width:100%;
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+  .cell-diffs{display:flex;gap:4px;width:100%}
+  .cd{flex:1;border-radius:8px;text-align:center;opacity:.5;transition:.12s;min-width:0;
+      font-size:15px;font-weight:900;color:#fff;padding:4px 0;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .cd.sel{opacity:1;transform:translateY(-2px);outline:2px solid rgba(255,255,255,.85);outline-offset:-4px}
+  .car-arrow{position:absolute;top:120px;transform:translateY(-50%);z-index:4;width:48px;height:48px;
+    border-radius:50%;border:2px solid var(--line);background:#fff;color:var(--ink);font-size:16px;
+    cursor:pointer;font-family:inherit;font-weight:900;box-shadow:0 2px 8px rgba(80,70,50,.25)}
+  .car-arrow.left{left:20px}.car-arrow.right{right:20px}
+  .car-arrow:hover{border-color:var(--neon);color:var(--neon)}
+
+  /* bottom nav: play data + controls */
+  .sel-bottom{flex:1;display:flex;gap:14px;padding:6px 20px 0;min-height:0}
+  .info-panel{flex:1;padding:14px 20px;display:flex;flex-direction:column;gap:8px}
+  .pd-head{display:flex;align-items:center;gap:10px}
+  .pd-lbl{font-size:10px;font-weight:900;letter-spacing:2px;color:var(--txt-dim)}
+  .pd-sel{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .pd-diffs{display:flex;gap:5px}
+  .pdc{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:9px;color:#fff;font-weight:900;
+       font-size:13px;opacity:.5;cursor:pointer;transition:.12s;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .pdc:hover{opacity:.8}
+  .pdc.sel{opacity:1;outline:2px solid rgba(255,255,255,.9);outline-offset:-4px}
+  .pdc .pn{font-size:10px;letter-spacing:.5px}
+  .pd-grid{display:flex;gap:10px;margin-top:2px}
+  .pd-stat{flex:1;background:rgba(50,50,50,.06);border:2px solid var(--line);border-radius:12px;padding:9px 12px}
+  .pd-stat .k{font-size:9.5px;font-weight:900;letter-spacing:1.5px;color:var(--txt-dim)}
+  .pd-stat .v{font-size:19px;font-weight:900;color:var(--txt);margin-top:2px}
+  .pd-stat .v.dim{color:#b3ac9c;font-size:15px}
+  .pd-rating{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+  .pd-rating .rk{font-size:10px;font-weight:900;letter-spacing:1.5px;color:var(--txt-dim)}
+  .pd-rating .rv{font-size:20px;font-weight:900;color:var(--d-normal)}
+  .ctrl-panel{width:230px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  /* mods — hover to expand icons */
+  .mods{display:flex;align-items:center;gap:8px;position:relative;min-height:34px}
+  .mod-summary{margin-left:auto;font-size:13px;font-weight:900;color:var(--txt-dim);
+               display:flex;gap:5px;transition:.18s}
+  .mod-summary .act{color:var(--neon)}
+  .mod-icons{margin-left:auto;display:flex;gap:6px;max-width:0;opacity:0;overflow:hidden;
+             transition:.2s;pointer-events:none}
+  .mods:hover .mod-summary{opacity:0;max-width:0;overflow:hidden}
+  .mods:hover .mod-icons{max-width:120px;opacity:1;pointer-events:auto}
+  .mod-btn{width:34px;height:34px;border-radius:9px;border:2px solid var(--line);background:#fff;
+           color:var(--ink);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0}
+  .mod-btn:hover{border-color:var(--neon);color:var(--neon)}
+  .mod-btn.on{background:var(--neon);border-color:var(--neon);color:#fff}
+  .mod-summary svg{display:block}
+  .speed-block{display:flex;align-items:center;justify-content:space-between}
+  .ctrl-panel .sl{font-size:11px;font-weight:900;letter-spacing:1px;color:var(--txt-dim)}
+  .stepper{display:flex;align-items:center;gap:2px;background:#fff;border:2px solid var(--line);border-radius:12px}
+  .stepper button{background:var(--lav);border:none;color:var(--ink);font-size:18px;font-weight:900;
+                  width:34px;height:34px;cursor:pointer;font-family:inherit}
+  .stepper button:first-child{border-radius:9px 0 0 9px}
+  .stepper button:last-child{border-radius:0 9px 9px 0}
+  .stepper .val{min-width:56px;text-align:center;font-weight:900;font-size:16px}
+
+  .foot{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--charcoal);border-top:2px solid #262626}
+
+  /* leaderboard overlay */
+  .lb-overlay{position:absolute;inset:0;background:rgba(30,25,22,.55);z-index:8;display:none;
+              align-items:center;justify-content:center}
+  .lb-overlay.open{display:flex}
+  .lb-box{width:1080px;height:600px;display:flex;flex-direction:column;padding:24px;background:var(--panel);
+          border:2px solid var(--line);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .lb-boxhead{display:flex;align-items:center;margin-bottom:16px}
+  .lb-boxhead h3{font-size:22px;font-weight:900}
+  .lb-diff{margin-left:14px;margin-right:auto;padding:6px 16px;border-radius:10px;color:#fff;
+           font-weight:900;font-size:15px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .lb-tabs{display:flex;gap:6px;margin-bottom:-2px;padding-left:4px}
+  .lb-tab{padding:11px 30px;font-size:15px;font-weight:800;cursor:pointer;border:2px solid var(--line);
+          border-bottom:none;border-radius:12px 12px 0 0;color:var(--txt-dim);background:var(--panel2)}
+  .lb-tab.on{color:#fff;background:var(--charcoal);border-color:var(--charcoal)}
+  .lb-tab.disabled{opacity:.35;cursor:not-allowed}
+  .lb{flex:1;overflow-y:auto;background:#fff;border:2px solid var(--line);border-radius:0 14px 14px 14px}
+  .lb table{width:100%;border-collapse:collapse;font-size:16px;font-weight:600}
+  .lb th{text-align:left;padding:13px 20px;color:#cfcfcf;font-size:12px;letter-spacing:1.5px;
+         position:sticky;top:0;background:var(--charcoal)}
+  .lb td{padding:13px 20px;border-bottom:2px solid rgba(216,208,188,.6)}
+  .lb tr.me td{background:rgba(224,48,74,.08);color:#c22742;font-weight:800}
+  .lb .rk1{color:var(--d-normal);font-weight:900}
+  .lb-note{padding:22px;text-align:center;color:var(--txt-dim);font-size:13px;font-weight:700}
+
+  /* rating (Best 15) overlay */
+  .rat-box{width:760px;padding:20px;background:var(--panel);border:2px solid var(--line);border-radius:18px;
+           box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .rat-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .rat-av{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffd23e 30%,var(--neon) 75%)}
+  .rat-name{font-size:22px;font-weight:900;letter-spacing:1px}
+  .rat-big{margin-left:auto;text-align:right;background:var(--charcoal);border-radius:12px;padding:6px 16px}
+  .rat-big .rl{font-size:9px;font-weight:900;letter-spacing:2px;color:#bdb8ae}
+  .rat-big .rv{font-size:26px;font-weight:900;color:var(--yellow);line-height:1}
+  .rat-sub{font-size:12px;font-weight:900;letter-spacing:2px;color:var(--txt-dim)}
+  .rat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  /* whole cell tinted by difficulty; jacket kept */
+  .rat-cell{border-radius:12px;padding:9px 12px;position:relative;color:#fff;
+            display:flex;gap:10px;align-items:center;min-width:0;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .rat-jacket{width:44px;height:44px;border-radius:8px;flex-shrink:0;border:2px solid rgba(255,255,255,.25)}
+  .rat-info{flex:1;min-width:0}
+  .rat-titlerow{display:flex;align-items:baseline;gap:7px;min-width:0}
+  .rat-title{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .rat-dtag{font-size:10px;font-weight:900;letter-spacing:.5px;flex-shrink:0;white-space:nowrap;opacity:.9}
+  .rat-meta{display:flex;align-items:baseline;gap:8px;margin-top:3px}
+  .rat-score{font-size:13px;color:rgba(255,255,255,.82);font-weight:800;white-space:nowrap}
+  .rat-val{font-size:19px;font-weight:900;color:#fff;margin-left:auto;flex-shrink:0;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+  .rat-rank{position:absolute;top:4px;right:8px;font-size:9px;color:rgba(255,255,255,.5);font-weight:800}
+
+  /* ═══ SETTINGS — tabbed, everything visible ═══ */
+  .set-top{display:flex;align-items:center;gap:12px;padding:12px 18px}
+  .set-tabs{display:flex;gap:8px}
+  .set-tab{padding:9px 22px;border-radius:12px;border:2px solid var(--line);background:var(--panel);
+           font-weight:800;font-size:14px;cursor:pointer;color:var(--txt-dim);font-family:inherit;letter-spacing:1px}
+  .set-tab.on{background:var(--charcoal);border-color:var(--charcoal);color:#fff}
+  .set-body{flex:1;padding:8px 26px 20px;display:flex}
+  .set-card{flex:1;padding:24px 30px;display:none;flex-direction:column}
+  .set-card.on{display:flex}
+  .set-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-size:14px;font-weight:700}
+  .set-row .hint{display:block;font-size:11px;color:var(--txt-dim);margin-top:2px;font-weight:600}
+  input[type=range]{accent-color:var(--k-red);width:170px}
+  .sld{display:flex;align-items:center;gap:10px}
+  .sld span{min-width:48px;text-align:right;font-weight:800;font-size:13px}
+  .toggle{width:46px;height:26px;border-radius:13px;background:var(--panel2);border:2px solid var(--line);
+          position:relative;cursor:pointer;transition:.2s}
+  .toggle.on{background:var(--k-red);border-color:var(--k-red)}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on::after{left:22px}
+  .set-save{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:16px;border-top:2px dashed var(--line)}
+  .set-save .btn{padding:8px 22px;font-size:13px}
+  .set-fb{font-size:12px;font-weight:800;color:var(--k-red);opacity:0;transition:opacity .3s}
+
+  #modal{position:absolute;inset:0;background:rgba(40,35,30,.55);display:none;align-items:center;justify-content:center;z-index:10}
+  #modal.open{display:flex}
+  #modal .box{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:30px 40px;text-align:center}
+  #modal .box p{margin-bottom:20px;font-weight:800}
 </style>
 </head>
 <body>
-  <div>
-    <div class="logo" style="text-align:center">ERI‖:</div>
-    <div class="sub" style="text-align:center">EMOTIVE RHYTHM INTERACTION</div>
+<div id="stage">
+
+  <!-- ═══ FMOD splash ═══ -->
+  <div id="splash"><div class="fmod">f<span style="letter-spacing:-8px">m</span>od<sup>&reg;</sup></div></div>
+
+  <!-- ═══ TITLE ═══ -->
+  <div class="screen active" id="scr-title" onclick="titleAdvance()">
+    <div class="profile">
+      <div class="avatar"></div>
+      <div><div class="name">DANNY</div><div class="rating mono">RATING <span id="ratTitle">--.--</span></div></div>
+      <div class="online">&#9679; ONLINE</div>
+    </div>
+    <img class="t-char" id="charImg" src="eri_character.png" alt=""
+         onerror="this.remove();document.getElementById('charSvg').style.display='block'">
+    <svg id="charSvg" class="t-char" style="display:none" width="340" height="640" viewBox="0 0 560 1060" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke="#ff4655" stroke-width="7">
+        <path d="M200 165 L235 148 L275 152 L300 170 L295 230 L270 262 L225 258 L205 225 Z"/>
+        <path d="M212 170 L228 235 M238 155 L240 250 M262 158 L255 252 M282 168 L272 245 M205 200 L295 205"/>
+      </g>
+      <g stroke="#ff4655" stroke-width="6">
+        <path d="M205 240 L120 430 L95 640 L60 900 M298 245 L420 480 L465 620 L495 690"/>
+        <path d="M225 262 L180 470 M272 262 L330 480"/>
+      </g>
+      <g stroke="#ffe9e9" stroke-width="6"><path d="M230 268 L215 330 L232 470 M268 268 L300 335 L292 470 M215 330 L0 262"/></g>
+      <g stroke="#ffd23e" stroke-width="6"><path d="M235 335 L290 460 M292 338 L232 462 M262 330 L246 465 M262 330 L282 462 M240 395 L288 398"/></g>
+      <g stroke="#ff4655" stroke-width="6"><path d="M165 590 L188 520 L210 588 L235 515 L262 590 L288 515 L315 588 L338 518 L358 585"/></g>
+      <g stroke="#ffe9e9" stroke-width="6">
+        <path d="M215 595 L155 760 L120 880 M255 598 L215 755 L195 880 M155 760 L215 755 M155 760 L195 880 M215 755 L120 880"/>
+        <path d="M300 598 L360 750 L400 870 M268 600 L310 750 L330 875 M360 750 L310 750 M360 750 L330 875 M310 750 L400 870"/>
+      </g>
+    </svg>
+    <div class="t-logo">
+      <div class="logo">ERI<span class="bars">&#8214;</span><span class="dots">:</span></div>
+      <div class="sub">EMOTIVE RHYTHM INTERACTION</div>
+    </div>
+    <div class="presskey">PRESS ANY KEY</div>
+    <div class="t-menu">
+      <div class="small-logo">ERI&#8214;:</div>
+      <button class="tbtn" onclick="event.stopPropagation();go('scr-select')">PLAY<span class="k">[5]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();go('scr-settings')">SETTINGS<span class="k">[9]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();alert('Import charts (mc / osu / sm)')">IMPORT<span class="k">[I]</span></button>
+      <button class="tbtn" onclick="event.stopPropagation();openModal()">QUIT<span class="k">[0]</span></button>
+    </div>
   </div>
-  <div class="links">
-    <a class="card" href="outgame_mockup.html">아웃게임 목업<small>타이틀 · 선곡 · Decide · 설정 (인터랙티브)</small></a>
-    <a class="card" href="아웃게임_기획.md">기획 문서<small>방향성 · 화면별 기획</small></a>
+
+  <!-- ═══ SONG SELECT ═══ -->
+  <div class="screen" id="scr-select">
+    <div class="papertex"></div>
+    <div class="sel-top">
+      <button class="icon-btn" onclick="go('scr-title')" title="Back">&#8592;</button>
+      <input class="search" id="searchIn" oninput="setQuery(this.value)" placeholder="Search  title / artist / charter">
+      <div class="sortsel">SORT
+        <select id="sortSel" onchange="setSort(this.value);this.blur()">
+          <option value="lvAsc">Level &#8593;</option><option value="lvDesc">Level &#8595;</option>
+          <option value="title">Title</option><option value="artist">Artist</option>
+          <option value="bpm">BPM</option><option value="len">Length</option>
+          <option value="charter">Charter</option><option value="date">Newest</option><option value="ver">Version</option>
+        </select>
+      </div>
+      <button class="icon-btn" id="filterBtn" style="font-size:14px" onclick="toggleFilter()" title="Filter">&#9776;</button>
+      <span class="count" id="songCount"></span>
+      <div class="right-slot">
+        <div class="mini-profile" id="miniProfile" onclick="openRating()" title="Rating (Best 15)">
+          <div class="av"></div>
+          <div><div class="mn">DANNY <span style="color:#5cff8f;font-size:9px">&#9679;</span></div>
+               <div class="mr mono">RATING <span id="ratMini">--.--</span> &middot; Lv.42</div></div>
+        </div>
+        <div class="filter-inline" id="filterInline">
+          <div class="fx">
+            <span class="chip on" data-f="official" onclick="toggleChip(this)">OFFICIAL</span>
+            <span class="chip on" data-f="ranked" onclick="toggleChip(this)">RANKED</span>
+            <span class="chip on" data-f="unranked" onclick="toggleChip(this)">UNRANKED</span>
+            <span class="chip" data-f="cleared" onclick="toggleChip(this)">CLEARED</span>
+            <span class="chip" data-f="charter" onclick="toggleChip(this)">Charter: 보리차</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="folder-zone" id="folderZone">
+      <div class="folder-bar" id="folderBar">
+        <button class="fb-arrow" onclick="folderJump(-1)">&#9664;</button>
+        <div class="fb-chips" id="folderChips"></div>
+        <button class="fb-arrow" onclick="folderJump(1)">&#9654;</button>
+      </div>
+      <!-- full folder list — appears on hover -->
+      <div class="fl-drop"><h3>ALL FOLDERS</h3><div class="fl-grid" id="flGrid"></div></div>
+    </div>
+
+    <div class="car-wrap">
+      <button class="car-arrow left" onclick="moveCard(-1)">&#9664;</button>
+      <button class="car-arrow right" onclick="moveCard(1)">&#9654;</button>
+      <div class="car-track" id="carTrack"></div>
+    </div>
+
+    <div class="sel-bottom">
+      <div class="info-panel pcard">
+        <div class="pd-head">
+          <span class="pd-lbl">PLAY DATA</span>
+          <span class="badge" id="dBadge"></span>
+          <div class="pd-sel">
+            <span class="pd-lbl">DIFFICULTY <span class="key p" style="min-width:18px;height:18px;font-size:10px">1</span><span class="key p" style="min-width:18px;height:18px;font-size:10px">3</span></span>
+            <div class="pd-diffs" id="dDiffs"></div>
+          </div>
+        </div>
+        <div class="pd-grid">
+          <div class="pd-stat"><div class="k">SCORE</div><div class="v" id="pdScore"></div></div>
+          <div class="pd-stat"><div class="k">ACCURACY</div><div class="v" id="pdAcc"></div></div>
+          <div class="pd-stat"><div class="k">MAX COMBO</div><div class="v" id="pdCombo"></div></div>
+        </div>
+        <div class="pd-rating"><span class="rk">RATING EARNED</span><span class="rv" id="pdRating"></span></div>
+      </div>
+      <div class="ctrl-panel pcard">
+        <div class="speed-block">
+          <span class="sl">SPEED</span>
+          <div class="stepper">
+            <button onclick="chgSpeed(-0.5)">&minus;</button>
+            <div class="val mono spdVal">2.5</div>
+            <button onclick="chgSpeed(0.5)">+</button>
+          </div>
+        </div>
+        <div class="mods">
+          <span class="sl">MODS</span>
+          <span class="mod-summary" id="modSummary">OFF</span>
+          <div class="mod-icons">
+            <button class="mod-btn" data-m="h" onclick="toggleMod(this)" title="Mirror L / R">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/></svg></button>
+            <button class="mod-btn" data-m="v" onclick="toggleMod(this)" title="Mirror U / D">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/></svg></button>
+          </div>
+        </div>
+        <button class="btn start" style="width:100%;margin-top:auto" onclick="startGame()">START <span style="opacity:.7;font-size:12px">[5]</span></button>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="legend">
+        <span><span class="key t">4</span><span class="key t">6</span><span class="lbl">Card</span></span>
+        <span><span class="key p">1</span><span class="key p">3</span><span class="lbl">Difficulty</span></span>
+        <span><span class="key g">2</span><span class="lbl">Leaderboard</span></span>
+        <span><span class="key r">5</span><span class="lbl">Start</span></span>
+        <span><span class="key n">9</span><span class="lbl">Settings</span></span>
+      </div>
+    </div>
+
+    <!-- rating (Best 15) overlay -->
+    <div class="lb-overlay" id="ratingOverlay" onclick="if(event.target===this)closeRating()">
+      <div class="rat-box">
+        <div class="rat-head">
+          <div class="rat-av"></div>
+          <div class="rat-name">DANNY</div>
+          <div class="rat-big"><div class="rl">RATING</div><div class="rv" id="ratBig">--.--</div></div>
+          <div class="rat-sub">BEST 15</div>
+          <button class="icon-btn" style="width:34px;height:34px;font-size:15px;margin-left:8px" onclick="closeRating()">&times;</button>
+        </div>
+        <div class="rat-grid" id="ratGrid"></div>
+      </div>
+    </div>
+
+    <!-- leaderboard overlay -->
+    <div class="lb-overlay" id="lbOverlay" onclick="if(event.target===this)closeLB()">
+      <div class="lb-box">
+        <div class="lb-boxhead"><h3 id="lbTitle"></h3>
+          <span class="lb-diff" id="lbDiff"></span>
+          <button class="icon-btn" style="width:34px;height:34px;font-size:15px;margin-left:14px" onclick="closeLB()">&times;</button></div>
+        <div class="lb-tabs">
+          <div class="lb-tab on" id="tabGlobal" onclick="lbTab(this,'global')">Global</div>
+          <div class="lb-tab" onclick="lbTab(this,'friend')">Friends</div>
+          <div class="lb-tab" onclick="lbTab(this,'local')">Local</div>
+        </div>
+        <div class="lb" id="lbBody"></div>
+      </div>
+    </div>
   </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div class="screen" id="scr-settings">
+    <div class="papertex"></div>
+    <div class="set-top">
+      <button class="icon-btn" onclick="go('scr-title')" title="Back">&#8592;</button>
+      <div class="set-tabs">
+        <div class="set-tab on" onclick="setTab(0)">OFFSET</div>
+        <div class="set-tab" onclick="setTab(1)">PLAY</div>
+        <div class="set-tab" onclick="setTab(2)">VIEW</div>
+        <div class="set-tab" onclick="setTab(3)">PLAYER</div>
+      </div>
+    </div>
+    <div class="set-body">
+      <div class="set-card on pcard" data-set="0">
+        <div class="set-row"><div>Input Timing<span class="hint">Input judgement offset &middot; step unit &middot; also on song select</span></div>
+          <div class="stepper"><button onclick="chgOffset(-0.5)">&minus;</button>
+            <div class="val mono offVal">-1.5</div><button onclick="chgOffset(0.5)">+</button></div></div>
+        <div class="set-row"><div>Music Sync<span class="hint">Note-audio sync offset &middot; step unit &middot; also on song select</span></div>
+          <div class="stepper"><button onclick="chgSync(-0.5)">&minus;</button>
+            <div class="val mono syncVal">+0.0</div><button onclick="chgSync(0.5)">+</button></div></div>
+        <div class="set-row"><div>Calibration<span class="hint">Tap to the beat &#8594; auto-suggest both offsets</span></div>
+          <button class="btn lav" style="padding:8px 18px;font-size:13px" onclick="alert('Calibration wizard')">Start</button></div>
+        <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Offsets saved.')">Save</button>
+          <button class="btn" onclick="setFeedback(this,'Offsets reset.')">Reset</button><span class="set-fb"></span></div>
+      </div>
+      <div class="set-card pcard" data-set="1">
+        <div class="set-row"><div>Note Speed<span class="hint">0.5 step &middot; shared with song select</span></div>
+          <div class="stepper"><button onclick="chgSpeed(-0.5)">&minus;</button>
+            <div class="val mono spdVal">2.5</div><button onclick="chgSpeed(0.5)">+</button></div></div>
+        <div class="set-row"><div>Grow Time<span class="hint">Seconds &middot; lower = faster</span></div>
+          <div class="sld"><input type="range" min="0" max="2" step="0.05" value="0.85" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">0.85</span></div></div>
+        <div class="set-row"><div>Appear Lead<span class="hint">Seconds</span></div>
+          <div class="sld"><input type="range" min="0" max="2" step="0.05" value="1.20" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">1.20</span></div></div>
+        <div class="set-row"><div>Perfect SFX Volume</div>
+          <div class="sld"><input type="range" min="0" max="100" step="1" value="100" oninput="this.parentNode.querySelector('span').textContent=this.value+'%'"><span class="mono">100%</span></div></div>
+        <div class="set-row"><div>Mouse Sensitivity<span class="hint">0.1 – 2.0</span></div>
+          <div class="sld"><input type="range" min="0.1" max="2" step="0.05" value="1.00" oninput="this.parentNode.querySelector('span').textContent=(+this.value).toFixed(2)"><span class="mono">1.00</span></div></div>
+        <div class="set-row"><div>Use Sensitivity</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Settings saved.')">Save</button>
+          <button class="btn" onclick="setFeedback(this,'Settings reset.')">Reset</button><span class="set-fb"></span></div>
+      </div>
+      <div class="set-card pcard" data-set="2">
+        <div class="set-row"><div>Fullscreen<span class="hint">Applied immediately</span></div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Settings saved.')">Save</button>
+          <button class="btn" onclick="setFeedback(this,'Settings reset.')">Reset</button><span class="set-fb"></span></div>
+      </div>
+      <div class="set-card pcard" data-set="3">
+        <div class="set-row"><div>Nickname<span class="hint">Saving restarts the game</span></div>
+          <input class="search" style="width:180px" value="DANNY"></div>
+        <div class="set-row"><div>Rating<span class="hint">Sum of Best 15 verified plays</span></div>
+          <b class="mono" style="color:var(--d-normal)" id="ratSettings">--.--</b></div>
+        <div class="set-row"><div>Status</div><span style="color:#3e9e5f;font-size:13px">&#9679; Signed in</span></div>
+        <div class="set-save"><button class="btn lav" onclick="setFeedback(this,'Save will restart the game.')">Save</button>
+          <button class="btn" onclick="setFeedback(this,'Reset to default name.')">Reset</button><span class="set-fb"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal"><div class="box"><p>Quit the game?</p>
+    <button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn lav" onclick="closeModal();alert('Quit')">Quit</button>
+  </div></div>
+</div>
+
+<script>
+// [title, artist, charter, tier, bpm, length(sec), version, uploaded, diffs, pb(0=none)]
+const RAW=[
+ ["FREEDOM DiVE","xi","보리차","official",222,258,"v2.1","2025-03-14",[["Hard",12],["Master",15]],997120],
+ ["Blue Zenith","xi","대니","official",200,243,"v1.3","2025-06-02",[["Hard",11],["Master",14]],985400],
+ ["Halcyon","xi","tgim","official",191,232,"v1.0","2025-01-12",[["Normal",7],["Hard",10]],991230],
+ ["Ascension to Heaven","xi","보리차","ranked",200,262,"v1.1","2025-08-21",[["Hard",11],["Master",13]],0],
+ ["Bad Apple!!","nomico","pobadoba","official",138,219,"v3.0","2025-02-05",[["Easy",2],["Normal",5],["Hard",8]],999180],
+ ["Grievous Lady","Team Grimoire vs Laur","대니","ranked",210,136,"v1.2","2025-11-30",[["Hard",12],["Master",15]],962330],
+ ["Fracture Ray","Sakuzyo","보리차","ranked",200,141,"v1.0","2025-10-17",[["Hard",11],["Master",14]],0],
+ ["Tempestissimo","t+pazolite","tgim","ranked",231,146,"v2.0","2026-01-08",[["Master",15]],941020],
+ ["Oshama Scramble!","t+pazolite","pino","official",210,122,"v1.4","2025-04-27",[["Normal",8],["Hard",11]],988560],
+ ["Garakuta Doll Play","t+pazolite","pino","ranked",228,127,"v1.1","2025-09-09",[["Hard",12],["Master",14]],973890],
+ ["Marenol","LeaF","대니","unranked",170,133,"v0.9","2026-05-22",[["Master",14]],0],
+ ["Doppelganger","LeaF","tgim","ranked",185,138,"v1.0","2025-12-14",[["Hard",10],["Master",13]],979840],
+ ["Aleph-0","LeaF","보리차","ranked",200,144,"v1.2","2026-02-19",[["Master",15]],0],
+ ["Calamity Fortune","LeaF","pobadoba","ranked",200,131,"v1.0","2025-07-07",[["Hard",11],["Master",13]],968770],
+ ["Fastest Crash","Camellia","대니","ranked",234,196,"v1.1","2026-03-03",[["Hard",12],["Master",14]],952210],
+ ["Exit This Earth's Atomosphere","Camellia","보리차","official",170,266,"v1.0","2025-05-16",[["Normal",8],["Hard",11],["Master",13]],981930],
+ ["GHOST","Camellia","tgim","ranked",220,247,"v1.3","2026-04-11",[["Master",14]],0],
+ ["crystallized","Camellia","seno","official",174,251,"v2.2","2025-03-29",[["Normal",6],["Hard",9]],993410],
+ ["Conflict","siromaru + cranky","seno","official",160,124,"v1.5","2025-01-25",[["Easy",4],["Hard",9],["Master",12]],996520],
+ ["FLOWER","DJ YOSHITAKA","pobadoba","official",173,119,"v2.0","2025-02-18",[["Normal",7],["Hard",10]],994710],
+ ["冥","Amuro vs Killer","보리차","ranked",200,129,"v1.0","2026-06-06",[["Master",15]],0],
+ ["AA","D.J.Amuro","대니","ranked",154,117,"v1.1","2025-10-02",[["Hard",10],["Master",12]],984300],
+ ["V","TAKA","tgim","official",150,114,"v2.1","2025-04-08",[["Normal",6],["Hard",9],["Master",11]],990870],
+ ["MAX 300","Ω","pino","ranked",300,96,"v1.0","2026-01-27",[["Master",13]],921040],
+ ["PARANOiA","180","seno","official",180,103,"v3.1","2025-01-31",[["Easy",3],["Normal",6],["Hard",9]],997750],
+ ["Fascination MAXX","100-200-400","대니","ranked",200,108,"v1.2","2026-05-01",[["Hard",12],["Master",14]],0],
+ ["Altale","Sakuzyo","pobadoba","official",90,141,"v1.6","2025-06-24",[["Easy",1],["Normal",4],["Hard",7]],998910],
+ ["Brain Power","NOMA","tgim","unranked",145,169,"v0.8","2026-06-30",[["Normal",7],["Hard",10]],956780],
+ ["Lachryma《Re:Queen'M》","かねこちはる","보리차","ranked",236,133,"v1.0","2026-07-18",[["Hard",13],["Master",15]],0],
+ ["Igallta","Se-U-Ra","대니","unranked",216,142,"v0.9","2026-07-02",[["Master",15]],0],
+];
+const GRADE=s=>s>=995000?"SS":s>=980000?"S":s>=960000?"A":s>=930000?"B":"C";
+const songs=RAW.map(r=>({t:r[0],a:r[1],ch:r[2],tier:r[3],bpm:r[4],sec:r[5],ver:r[6],date:r[7],diffs:r[8],
+  pb:r[9]?{score:r[9],acc:(94+(r[9]%50000)/50000*5.9).toFixed(2)+"%",rank:GRADE(r[9])}:null}));
+const fmtLen=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+function hue(t){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return h}
+const diffColor={Easy:"#5a8c46",Normal:"#a08228",Hard:"#963c32",Master:"#555"};
+const diffBg={Easy:"#31502a",Normal:"#5c471a",Hard:"#57221c",Master:"#333336"}; // darkened tint for rating cells
+const lb={
+ global:[{r:1,n:"KIRIN",s:999120,acc:"99.87%",sp:"3.0"},{r:2,n:"unag1",s:997450,acc:"99.62%",sp:"2.5"},
+  {r:3,n:"보리차",s:995810,acc:"99.40%",sp:"2.0"},{r:14,n:"DANNY",s:987230,acc:"98.42%",sp:"2.5",me:1},
+  {r:15,n:"tgim",s:986900,acc:"98.39%",sp:"3.5"},{r:16,n:"parry_god",s:985110,acc:"98.21%",sp:"2.0"}],
+ friend:[{r:1,n:"보리차",s:995810,acc:"99.40%",sp:"2.0"},{r:2,n:"DANNY",s:987230,acc:"98.42%",sp:"2.5",me:1},
+  {r:3,n:"tgim",s:986900,acc:"98.39%",sp:"3.5"}],
+ local:[{r:1,n:"07-20",s:987230,acc:"98.42%",sp:"2.5",me:1},{r:2,n:"07-18",s:975400,acc:"97.80%",sp:"2.5"},
+  {r:3,n:"07-11",s:951200,acc:"96.55%",sp:"2.0"}]
+};
+
+let focused=0,speed=2.5,offset=-1.5,sync=0,titlePhase=0,splashDone=false,setPage=0;
+const CARD_W=190,GAP=22;
+const ORDER=['Easy','Normal','Hard','Master'];
+let cursorName='Normal';
+let sortMode="lvAsc",query="",fTier={official:true,ranked:true,unranked:true},fCleared=false,fCharter=false;
+let items=[],groupKeys=[],groupStart={},groupCount={};
+const chartMode=()=>sortMode==='lvAsc'||sortMode==='lvDesc';
+const pickDiffIdx=s=>{let best=0,bd=99;s.diffs.forEach((d,i)=>{const x=Math.abs(ORDER.indexOf(d[0])-ORDER.indexOf(cursorName));if(x<bd){bd=x;best=i}});return best};
+
+// splash + title
+function endSplash(){if(splashDone)return;splashDone=true;
+  document.getElementById('splash').classList.add('fade');setTimeout(()=>document.getElementById('splash').remove(),700)}
+setTimeout(endSplash,2200);
+function titleAdvance(){if(!splashDone){endSplash();return}
+  if(titlePhase===0){titlePhase=1;document.getElementById('scr-title').classList.add('menu-mode')}}
+
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='scr-title'&&titlePhase===1)document.getElementById('scr-title').classList.add('menu-mode')}
+function openModal(){document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function startGame(){const it=items[focused];if(!it)return;alert('Start: '+it.s.t+' ['+it.s.diffs[it.di!==undefined?it.di:pickDiffIdx(it.s)][0]+']')}
+
+// data view
+function filteredSongs(){let v=songs.filter(s=>fTier[s.tier]);
+  if(fCleared)v=v.filter(s=>s.pb);if(fCharter)v=v.filter(s=>s.ch==="보리차");
+  if(query){const q=query.toLowerCase();v=v.filter(s=>(s.t+s.a+s.ch).toLowerCase().includes(q))}return v}
+function sortedUnits(){const v=filteredSongs();
+  if(chartMode()){const u=[];v.forEach(s=>s.diffs.forEach((d,di)=>u.push({s,di})));
+    u.sort((a,b)=>sortMode==='lvAsc'?a.s.diffs[a.di][1]-b.s.diffs[b.di][1]:b.s.diffs[b.di][1]-a.s.diffs[a.di][1]);return u}
+  const cmp={title:(a,b)=>a.t.localeCompare(b.t),artist:(a,b)=>a.a.localeCompare(b.a),bpm:(a,b)=>a.bpm-b.bpm,
+    len:(a,b)=>a.sec-b.sec,charter:(a,b)=>a.ch.localeCompare(b.ch,'ko'),date:(a,b)=>b.date.localeCompare(a.date),
+    ver:(a,b)=>b.ver.localeCompare(a.ver,undefined,{numeric:true})}[sortMode];
+  return v.sort(cmp).map(s=>({s}))}
+function folderKey(u){const s=u.s;switch(sortMode){
+  case'lvAsc':case'lvDesc':return'Lv.'+s.diffs[u.di][1];
+  case'title':return s.t[0].toUpperCase();case'artist':return s.a[0].toUpperCase();
+  case'charter':return s.ch;case'date':return s.date.slice(0,7);case'ver':return s.ver.split('.')[0]+'.x';
+  case'bpm':return s.bpm<120?'~119':s.bpm<160?'120+':s.bpm<200?'160+':'200+';
+  case'len':return s.sec<120?'~2:00':s.sec<180?'2:00+':'3:00+'}}
+function buildItems(){items=sortedUnits();
+  document.getElementById('songCount').textContent=`${items.length} / ${chartMode()?songs.reduce((n,s)=>n+s.diffs.length,0):songs.length} ${chartMode()?'charts':'songs'}`;
+  groupKeys=[];groupStart={};groupCount={};if(query)return;
+  items.forEach((u,i)=>{const k=folderKey(u);if(groupStart[k]===undefined){groupStart[k]=i;groupCount[k]=0;groupKeys.push(k)}groupCount[k]++})}
+const curFolder=()=>items.length?folderKey(items[Math.min(focused,items.length-1)]):null;
+
+function setSort(m){sortMode=m;focused=0;refreshView()}
+function setQuery(q){query=q.trim();focused=0;refreshView()}
+let filterOpen=false;
+function toggleFilter(){filterOpen=!filterOpen;
+  document.getElementById('miniProfile').classList.toggle('hide',filterOpen);
+  document.getElementById('songCount').classList.toggle('hide',filterOpen);
+  document.getElementById('filterInline').classList.toggle('show',filterOpen);
+  document.getElementById('filterBtn').style.borderColor=filterOpen?'var(--neon)':'';
+  document.getElementById('filterBtn').style.color=filterOpen?'var(--neon)':''}
+function toggleChip(el){el.classList.toggle('on');const on=el.classList.contains('on'),f=el.dataset.f;
+  if(f==='cleared')fCleared=on;else if(f==='charter')fCharter=on;else fTier[f]=on;refreshView()}
+function refreshView(){buildItems();if(focused>=items.length)focused=Math.max(0,items.length-1);renderCarousel()}
+function folderJump(dir){if(!groupKeys.length)return;const i=groupKeys.indexOf(curFolder());
+  const ni=Math.max(0,Math.min(groupKeys.length-1,i+dir));focused=groupStart[groupKeys[ni]];renderCarousel()}
+function jumpFolder(k){if(groupStart[k]!==undefined){focused=groupStart[k];renderCarousel()}}
+function moveCard(d){if(!items.length)return;focused=Math.max(0,Math.min(items.length-1,focused+d));renderCarousel()}
+function cursorMove(d){const it=items[focused];if(!it)return;const cur=pickDiffIdx(it.s);
+  cursorName=it.s.diffs[Math.max(0,Math.min(it.s.diffs.length-1,cur+d))][0];renderCarousel()}
+
+const tierBadge=t=>`<span class="badge ${t}">${t.toUpperCase()}</span>`;
+const jstyle=s=>{const h=hue(s.t);return`background:linear-gradient(135deg,hsl(${h},52%,55%),hsl(${(h+45)%360},48%,26%))`};
+function renderCarousel(){
+  const track=document.getElementById('carTrack');
+  const fb=document.getElementById('folderBar');
+  if(query||!groupKeys.length){document.getElementById('folderZone').style.display='none'}
+  else{document.getElementById('folderZone').style.display='block';const cur=curFolder(),gi=groupKeys.indexOf(cur);
+    const prev=groupKeys[gi-1],next=groupKeys[gi+1];
+    document.getElementById('folderChips').innerHTML=
+      `<span class="fb-chip side ${prev===undefined?'ghost':''}" ${prev!==undefined?`onclick="jumpFolder('${prev}')"`:''}>${prev??'·'}</span>`+
+      `<span class="fb-chip on" title="Hover for all folders">${cur} <small>${groupCount[cur]}</small></span>`+
+      `<span class="fb-chip side ${next===undefined?'ghost':''}" ${next!==undefined?`onclick="jumpFolder('${next}')"`:''}>${next??'·'}</span>`;
+    document.getElementById('flGrid').innerHTML=groupKeys.map(k=>
+      `<span class="fl-item ${k===cur?'on':''}" onclick="jumpFolder('${k}')">${k} <small>${groupCount[k]}</small></span>`).join('')}
+  track.innerHTML=items.map((it,i)=>{const s=it.s,sel=it.di!==undefined?it.di:pickDiffIdx(s);
+    // level sort → show only that one chart's difficulty; otherwise show all
+    const shown=chartMode()?[[s.diffs[sel],sel]]:s.diffs.map((d,di)=>[d,di]);
+    const diffs=shown.map(([d,di])=>
+      `<div class="cd ${di===sel?'sel':''}" style="background:${diffColor[d[0]]}" title="${d[0]}">${d[1]}</div>`).join('');
+    return `<div class="song-cell ${i===focused?'focused':''}" onclick="focused=${i};renderCarousel()" ondblclick="startGame()">
+      <div class="scard"><div class="sc-jacket" style="${jstyle(s)}"></div><div class="sc-tier">${tierBadge(s.tier)}</div></div>
+      <div class="cell-title">${s.t}</div>
+      <div class="cell-artist">${s.a}</div>
+      <div class="cell-diffs">${diffs}</div>
+    </div>`}).join('');
+  track.style.transform=`translateX(${-(focused*(CARD_W+GAP)+CARD_W/2)}px)`;
+  renderInfo();
+}
+function renderInfo(){
+  const it=items[focused];const b=document.getElementById('dBadge');
+  const set=(id,v)=>document.getElementById(id).textContent=v;
+  const setHtml=(id,v)=>document.getElementById(id).innerHTML=v;
+  if(!it){b.className='badge';b.textContent='';document.getElementById('dDiffs').innerHTML='';
+    set('pdScore','—');set('pdAcc','—');set('pdCombo','—');set('pdRating','—');return}
+  const s=it.s,di=it.di!==undefined?it.di:pickDiffIdx(s),d=s.diffs[di];
+  b.className='badge '+s.tier;b.textContent=s.tier.toUpperCase();
+  // song sort: show all difficulties (selected highlighted + name). level sort: only that chart.
+  const shown=chartMode()?[[d,di]]:s.diffs.map((dd,i)=>[dd,i]);
+  const clickable=!chartMode();
+  document.getElementById('dDiffs').innerHTML=shown.map(([dd,i])=>
+    `<div class="pdc ${i===di?'sel':''}" style="background:${diffColor[dd[0]]}${clickable?'':';cursor:default'}"
+       ${clickable?`onclick="cursorName='${dd[0]}';renderCarousel()"`:''}>
+       ${i===di?`<span class="pn">${dd[0].toUpperCase()}</span>`:''}${dd[1]}</div>`).join('');
+  if(s.pb){
+    setHtml('pdScore',`<span class="mono">${s.pb.score.toLocaleString()}</span>`);
+    set('pdAcc',s.pb.acc);
+    setHtml('pdCombo',`<span class="mono">${(950+ (s.pb.score%400)).toLocaleString()}x</span>`);
+    // rating earned = level × accuracy (only official/ranked counts)
+    const rating=(d[1]*parseFloat(s.pb.acc)/100).toFixed(1);
+    setHtml('pdRating', s.tier==='unranked'
+      ? `<span style="color:#b3ac9c;font-size:14px">— (unranked)</span>`
+      : `${rating}`);
+  }else{
+    ['pdScore','pdAcc','pdCombo'].forEach(id=>{const e=document.getElementById(id);e.textContent='NO PLAY';e.classList.add('dim')});
+    document.getElementById('pdRating').textContent='—';
+  }
+  ['pdScore','pdAcc','pdCombo'].forEach(id=>{if(s.pb)document.getElementById(id).classList.remove('dim')});
+}
+
+// leaderboard overlay
+function openLB(){const it=items[focused];if(!it)return;
+  const s=it.s,di=it.di!==undefined?it.di:pickDiffIdx(s),d=s.diffs[di];
+  document.getElementById('lbTitle').textContent=s.t;
+  const dl=document.getElementById('lbDiff');dl.textContent=`${d[0]} Lv.${d[1]}`;dl.style.background=diffColor[d[0]];
+  const g=document.getElementById('tabGlobal');
+  if(it.s.tier==='unranked'){g.classList.add('disabled');lbTab(document.querySelectorAll('.lb-tab')[2],'local')}
+  else{g.classList.remove('disabled');lbTab(g,'global')}
+  document.getElementById('lbOverlay').classList.add('open')}
+function closeLB(){document.getElementById('lbOverlay').classList.remove('open')}
+function lbTab(el,key){if(el.classList.contains('disabled')){
+    document.getElementById('lbBody').innerHTML='<div class="lb-note">UNRANKED chart — no global board.<br>Local records only.</div>';return}
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+  const rows=lb[key].map(r=>`<tr class="${r.me?'me':''}"><td class="${r.r===1?'rk1':''}">#${r.r}</td>
+    <td>${r.n}</td><td class="mono">${r.s.toLocaleString()}</td><td>${r.acc}</td></tr>`).join('');
+  document.getElementById('lbBody').innerHTML=`<table><tr><th>RANK</th><th>${key==='local'?'DATE':'PLAYER'}</th><th>SCORE</th><th>ACC</th></tr>${rows}</table>`}
+
+// rating — Best 15 (level × accuracy, official/ranked only)
+function computeB15(){
+  const plays=songs.filter(s=>s.pb&&s.tier!=='unranked').map(s=>{
+    const d=s.diffs[s.diffs.length-1]; // best play assumed on hardest chart
+    return{s,name:d[0],lv:d[1],score:s.pb.score,acc:s.pb.acc,rating:d[1]*parseFloat(s.pb.acc)/100}});
+  plays.sort((a,b)=>b.rating-a.rating);
+  return plays.slice(0,15);
+}
+function refreshRating(){
+  const b15=computeB15();
+  const sum=b15.reduce((n,p)=>n+p.rating,0);
+  const v=sum.toFixed(2);
+  ['ratMini','ratBig','ratTitle','ratSettings'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=v});
+  document.getElementById('ratGrid').innerHTML=b15.map((p,i)=>
+    `<div class="rat-cell" style="background:${diffBg[p.name]}">
+       <div class="rat-jacket" style="${jstyle(p.s)}"></div>
+       <div class="rat-info">
+         <div class="rat-titlerow">
+           <span class="rat-title">${p.s.t}</span>
+           <span class="rat-dtag">${p.name.slice(0,3).toUpperCase()} ${p.lv}</span>
+         </div>
+         <div class="rat-meta">
+           <span class="rat-score mono">${p.score.toLocaleString()}</span>
+           <span class="rat-val">${p.rating.toFixed(2)}</span>
+         </div>
+       </div>
+       <div class="rat-rank">#${i+1}</div>
+     </div>`).join('');
+}
+function openRating(){document.getElementById('ratingOverlay').classList.add('open')}
+function closeRating(){document.getElementById('ratingOverlay').classList.remove('open')}
+
+// mods
+const modIcon={
+  h:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/></svg>',
+  v:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/></svg>'};
+let mods={h:false,v:false};
+function toggleMod(btn){const m=btn.dataset.m;mods[m]=!mods[m];btn.classList.toggle('on',mods[m]);
+  const on=Object.keys(mods).filter(k=>mods[k]);
+  document.getElementById('modSummary').innerHTML=on.length?on.map(k=>`<span class="act">${modIcon[k]}</span>`).join(''):'OFF'}
+
+// controls
+function chgSpeed(d){speed=Math.min(9.5,Math.max(0.5,speed+d));document.querySelectorAll('.spdVal').forEach(e=>e.textContent=speed.toFixed(1))}
+function chgOffset(d){offset=Math.min(8,Math.max(-8,offset+d));document.querySelectorAll('.offVal').forEach(e=>e.textContent=(offset>0?'+':'')+offset.toFixed(1))}
+function chgSync(d){sync=Math.min(8,Math.max(-8,sync+d));document.querySelectorAll('.syncVal').forEach(e=>e.textContent=(sync>=0?'+':'')+sync.toFixed(1))}
+function setTab(i){setPage=i;document.querySelectorAll('.set-tab').forEach((t,x)=>t.classList.toggle('on',x===i));
+  document.querySelectorAll('.set-card').forEach(c=>c.classList.toggle('on',+c.dataset.set===i))}
+function setFeedback(btn,msg){const fb=btn.closest('.set-card').querySelector('.set-fb');
+  fb.textContent=msg;fb.style.opacity=1;clearTimeout(fb._t);fb._t=setTimeout(()=>fb.style.opacity=0,2000)}
+
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(b)b.blur()});
+document.addEventListener('keydown',e=>{
+  if(!splashDone){endSplash();return}
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'){if(e.key==='Escape')e.target.blur();return}
+  const cur=document.querySelector('.screen.active').id,k=e.key;
+  if(document.getElementById('ratingOverlay').classList.contains('open')){if(k==='Escape')closeRating();return}
+  if(document.getElementById('lbOverlay').classList.contains('open')){if(k==='Escape'||k==='2')closeLB();return}
+  if(cur==='scr-title'&&titlePhase===0){titleAdvance();return}
+  if(k==='Escape'){if(document.getElementById('modal').classList.contains('open'))closeModal();
+    else if(cur==='scr-select')go('scr-title');else if(cur==='scr-settings')go('scr-title');return}
+  if(cur==='scr-select'){
+    if(!items.length){if(k==='9')go('scr-settings');return}
+    if(k==='ArrowRight'||k==='6')moveCard(1);
+    if(k==='ArrowLeft'||k==='4')moveCard(-1);
+    if((k==='ArrowUp'||k==='3')&&!chartMode())cursorMove(1);
+    if((k==='ArrowDown'||k==='1')&&!chartMode())cursorMove(-1);
+    if(k==='2')openLB();
+    if(k==='Enter'||k==='5')startGame();
+    if(k==='9')go('scr-settings');
+  }else if(cur==='scr-title'){
+    if(k==='Enter'||k==='5')go('scr-select');if(k==='9')go('scr-settings');
+    if(k==='i'||k==='I')alert('Import charts (mc / osu / sm)');
+  }else if(cur==='scr-settings'){
+    if(k==='ArrowRight'||k==='6')setTab(Math.min(3,setPage+1));
+    if(k==='ArrowLeft'||k==='4')setTab(Math.max(0,setPage-1));
+  }
+});
+
+refreshView();
+refreshRating();
+</script>
 </body>
 </html>
